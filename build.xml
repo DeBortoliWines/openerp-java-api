@@ -1,0 +1,59 @@
+<project name="OpenERPJavaApi" default="dist">
+
+	<!-- set global properties for this build -->
+	<property name="src" value="src" />
+	<property name="dest" value="bin"/>
+	<property name="dist" value="dist"/>
+	<property name="ui"   value="ui"/>
+	<property name="libext" value="libext"/>
+	<property name="version" value="1.00" />
+
+	<target name="init">
+		<!-- Create the build directory structure used by compile -->
+		<tstamp />
+		<mkdir dir="${dist}" />
+		<mkdir dir="${dest}" />
+	</target>
+	
+	<target name="compile" depends="init">
+		<!-- Compile the java code from ${src} into ${dest} -->
+		<javac 
+			debug="on" 
+			encoding="UTF-8" 
+			target="1.6" 
+			source="1.6" 
+			srcdir="${src}" 
+			destdir="${dest}" 
+			classpathref="project.class.path">
+			
+	    	<classpath id="project.class.path">
+				<fileset dir="${libext}" 		includes="**/*.jar *.zip"/>
+		  	</classpath>
+
+		</javac>
+	</target>
+	
+	<target name="clean">
+		<!-- Delete the ${dest} and ${dist} directory tree -->
+		<delete dir="${dest}" />
+		<delete dir="${dist}" />
+	</target>
+	
+	<target name="dist" depends="compile">
+		<!-- Create the distribution directory -->
+		<jar 
+			jarfile="${dist}/openerp-java-api.jar" 
+			index="true">
+			<fileset dir="${dest}"> <include name="**/*"/></fileset>
+			
+			<manifest>
+				<attribute name="Manifest-Version" value="${version}.${DSTAMP}" />
+				<attribute name="Implementation-Title" value="OpenERP Java API" />
+				<attribute name="Implementation-Version" value="${build.number}" />
+				<attribute name="Implementation-Vendor" value="De Bortoli Wines" />
+			</manifest>
+
+		</jar>
+	</target>
+	<target name="rebuild" depends="compile" />
+</project>
