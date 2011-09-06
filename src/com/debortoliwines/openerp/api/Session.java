@@ -19,7 +19,6 @@
 
 package com.debortoliwines.openerp.api;
 
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -63,9 +62,8 @@ public class Session {
 	 * @param port XML-RPC port number to connect to. Typically 8069.
 	 * @return A list of databases available for the OpenERP instance
 	 * @throws XmlRpcException
-	 * @throws MalformedURLException
 	 */
-	public ArrayList<String> getDatabaseList (String host, int port) throws XmlRpcException, MalformedURLException
+	public ArrayList<String> getDatabaseList (String host, int port) throws XmlRpcException
 	{
 		return OpenERPClient.getDatabaseList(host, port);
 	}
@@ -102,10 +100,9 @@ public class Session {
 	 * @param objectName The object name to do a search for
 	 * @param filter For example new Object[][] { new Object [] {"customer","=",true}}
 	 * @return Array of ID's for the objects found
-	 * @throws MalformedURLException
 	 * @throws XmlRpcException
 	 */
-	public Object[] searchObject(String objectName, Object [][] filter) throws MalformedURLException, XmlRpcException {
+	public Object[] searchObject(String objectName, Object [][] filter) throws XmlRpcException {
 		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
 		Object[] params = new Object[] {databaseName,userID,password,objectName,"search", filter};
 		Object[] ids = (Object[]) objectClient.execute("execute", params);
@@ -116,10 +113,9 @@ public class Session {
 	 * Fetches field information for an object n OpenERP
 	 * @param objectName Object or model name to fetch field information for
 	 * @return FieldCollecton data for all fields of the object
-	 * @throws MalformedURLException
 	 * @throws XmlRpcException
 	 */
-	public FieldCollection getFields(String objectName) throws MalformedURLException, XmlRpcException {
+	public FieldCollection getFields(String objectName) throws XmlRpcException {
 		return getFields(objectName,new String[] {});
 	}
 
@@ -128,11 +124,10 @@ public class Session {
 	 * @param objectName Object or model name to fetch field information for
 	 * @param filterFields Only return data for files in the filter list
 	 * @return FieldCollecton data for selected fields of the object
-	 * @throws MalformedURLException
 	 * @throws XmlRpcException
 	 */
 	@SuppressWarnings("unchecked")
-	public FieldCollection getFields(String objectName, String[] filterFields) throws MalformedURLException, XmlRpcException {
+	public FieldCollection getFields(String objectName, String[] filterFields) throws XmlRpcException {
 		FieldCollection collection = new FieldCollection();
 
 		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
@@ -165,10 +160,9 @@ public class Session {
 	 * @param ids List of id to fetch data for.  Call searchObject to get a potential list
 	 * @param fields List of fields to return data for
 	 * @return A collection of rows for an OpenERP object
-	 * @throws MalformedURLException
 	 * @throws XmlRpcException
 	 */
-	public RowCollection readObject(String objectName, Object [] ids, String [] fields) throws MalformedURLException, XmlRpcException {
+	public RowCollection readObject(String objectName, Object [] ids, String [] fields) throws XmlRpcException {
 		FieldCollection fieldCol = getFields(objectName, fields);
 
 		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
@@ -186,10 +180,9 @@ public class Session {
 	 * @param filter For example new Object[][] { new Object [] {"customer","=",true}}
 	 * @param fields List of fields to return data for
 	 * @return A collection of rows for an OpenERP object
-	 * @throws MalformedURLException
 	 * @throws XmlRpcException
 	 */
-	public RowCollection searchAndReadObject(String objectName, Object [][] filter, String [] fields) throws MalformedURLException, XmlRpcException {
+	public RowCollection searchAndReadObject(String objectName, Object [][] filter, String [] fields) throws XmlRpcException {
 		
 		return searchAndReadObject(objectName,filter,fields,0,new RowsReadListener() {
 			@Override
@@ -207,10 +200,9 @@ public class Session {
 	 * @param batchSize Number of rows to include in one batch.  A value of 0 or less creates one big batch.
 	 * @param rowListener Row listener to call after a batch of rows were fetched from the OpenERP server
 	 * @return The last batch that was collected.
-	 * @throws MalformedURLException
 	 * @throws XmlRpcException
 	 */
-	public RowCollection searchAndReadObject(String objectName, Object [][] filter, String [] fields, int batchSize, RowsReadListener rowListener) throws MalformedURLException, XmlRpcException {
+	public RowCollection searchAndReadObject(String objectName, Object [][] filter, String [] fields, int batchSize, RowsReadListener rowListener) throws XmlRpcException {
 		Object[] idList = searchObject(objectName,filter);	
 
 		RowCollection resultlist = null;
@@ -243,7 +235,105 @@ public class Session {
 		
 		return resultlist;
 	}
-
+	
+	/**
+	 * Updates object values
+	 * @param objectName Name of the object to update
+	 * @param id Database ID number of the object to update
+	 * @param valueList Field/Value pairs to update on the object
+	 * @return
+	 * @throws XmlRpcException
+	 */
+	public Object writeObject(String objectName, int id, HashMap<String, Object> valueList) throws XmlRpcException{
+		Object result = null;
+		
+		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
+		Object[] params = new Object[] {databaseName, userID, password, objectName, "write", id, valueList};
+		result = objectClient.execute("execute", params);
+		
+		return result;
+	}
+	
+	/**
+	 * Calls the import function on the server to bulk create/update records
+	 * @param objectName Name of the object to update
+	 * @param fieldList List of fields to update
+	 * @param rows Rows to import.  Fields must be in the same order as the 'fieldList' parameter
+	 * @return The result returned from the server
+	 * @throws ImportException 
+	 * @throws XmlRpcException 
+	 */
+	public Object [] importData(String objectName, String[] fieldList, ArrayList<Object[]> rows) throws XmlRpcException, ImportException{
+		Object [][] convertedRows = rows.toArray(new Object[rows.size()][]);
+		return importData(objectName, fieldList, convertedRows);
+	}
+	
+	/**
+	 * Calls the import function on the server to bulk create/update records
+	 * @param objectName Name of the object to update
+	 * @param fieldList List of fields to update
+	 * @param rows Rows to import.  Fields must be in the same order as the 'fieldList' parameter
+	 * @return The result returned from the server
+	 * @throws XmlRpcException 
+	 * @throws ImportException 
+	 */
+	public Object [] importData(String objectName, String[] fieldList, Object [][] rows) throws XmlRpcException, ImportException {
+		Object [] result = null;
+		
+		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
+		Object[] params = new Object[] {databaseName, userID, password, objectName, "import_data", fieldList, rows};
+		result = (Object []) objectClient.execute("execute", params);
+		
+		// Should return the number of rows committed.  If there was an error, it returns -1
+		if ((Integer) result[0] != rows.length)
+			throw new ImportException(result[2].toString());
+		
+		return result;
+	}
+	
+	/***
+	 * Miscellanous test functions
+	 * To be finished later when I've got use for them
+	public void nameGet() throws XmlRpcException{
+		Object result = null;
+		
+		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
+		HashMap<Object, String> values = new HashMap<Object, String> ();
+		values.put("user_email", "test@gmail.com");
+		
+		HashMap<String, Object> rows = new HashMap<String, Object> ();
+		rows.put("28", values);
+		
+		Object[] params = new Object[] {databaseName, userID, password, "res.users", "name_get", new Object[] {28}};
+		result = objectClient.execute("execute", params);
+		
+		//return result;
+	}
+	
+	public void nameSearch() throws XmlRpcException{
+		Object result = null;
+		
+		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
+		HashMap<Object, String> values = new HashMap<Object, String> ();
+		values.put("user_email", "test@gmail.com");
+		
+		HashMap<String, Object> rows = new HashMap<String, Object> ();
+		rows.put("28", values);
+		
+		Object[] params = new Object[] {databaseName, userID, password, "res.users", "name_search", "Pieter van der Merwe"};
+		result = objectClient.execute("execute", params);
+		
+		//return result;
+	}
+	
+	public Object getDefaults() throws XmlRpcException{
+		Object result = null;
+		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
+		Object[] params = new Object[] {databaseName, userID, password, "res.users", "default_get", new Object[]{"active"}};
+		result = objectClient.execute("execute", params);
+		return result;	}
+    ***/
+	
 	/***
 	 * Event handler when rows 
 	 * @author Pieter van der Merwe

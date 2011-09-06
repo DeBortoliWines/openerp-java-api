@@ -51,9 +51,8 @@ public class OpenERPClient extends XmlRpcClient {
 	 * @param host Host name or IP address where the OpenERP server is hosted
 	 * @param port XML-RPC port number to connect to.  Typically 8069.
 	 * @param rpcObjectType 
-	 * @throws MalformedURLException
 	 */
-	public OpenERPClient(String host, int port, RPCServices service) throws MalformedURLException {
+	public OpenERPClient(String host, int port, RPCServices service) {
 		super();
 		
 		String URL = "";
@@ -72,7 +71,11 @@ public class OpenERPClient extends XmlRpcClient {
 		
 		XmlRpcClientConfigImpl xmlrpcConfigLogin = new XmlRpcClientConfigImpl();
 		xmlrpcConfigLogin.setEnabledForExtensions(true);
-		xmlrpcConfigLogin.setServerURL(new URL("http", host, port,URL));
+		// The URL is hardcoded and can not be malformed
+		try {
+			xmlrpcConfigLogin.setServerURL(new URL("http", host, port,URL));
+		} catch (MalformedURLException e) {
+		}
 	
 		this.setConfig(xmlrpcConfigLogin);
 	}
@@ -83,9 +86,8 @@ public class OpenERPClient extends XmlRpcClient {
 	 * @param port XML-RPC port number to connect to
 	 * @return A list of databases available for the OpenERP instance
 	 * @throws XmlRpcException
-	 * @throws MalformedURLException
 	 */
-	public static ArrayList<String> getDatabaseList (String host, int port) throws XmlRpcException, MalformedURLException
+	public static ArrayList<String> getDatabaseList (String host, int port) throws XmlRpcException
 	{
 		OpenERPClient client = new OpenERPClient(host, port, RPCServices.RPC_DATABASE);
 		

@@ -46,11 +46,17 @@ public class Row extends HashMap<String, Object> {
 	@Override
 	public Object get(Object key) {
 
+		// ID is a special case.  It is always returned in a query
+		if (key != null && key.toString().equals("id"))
+			return openERPResult.get(key);
+		
 		Field fieldMeta = null;
-		for (Field f : fields){
-			if (f.getName().equals(key.toString()))
+		for (Field f : fields)
+			if (f.getName().equals(key.toString())){
 				fieldMeta = f;
-		}
+				break;
+			}
+		
 
 		if (fieldMeta == null)
 			return null;

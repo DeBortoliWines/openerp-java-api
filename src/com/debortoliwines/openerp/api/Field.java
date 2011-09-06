@@ -29,7 +29,7 @@ import java.util.HashMap;
 public class Field {
 	
 	public enum FieldType {
-		CHAR, TEXT, BOOLEAN, FLOAT, DATETIME, DATE, MANY2ONE, ONE2MANY, MANY2MANY, SELECTION 
+		INTEGER, CHAR, TEXT, BOOLEAN, FLOAT, DATETIME, DATE, MANY2ONE, ONE2MANY, MANY2MANY, SELECTION 
 	}
 	
 	private final String name;
