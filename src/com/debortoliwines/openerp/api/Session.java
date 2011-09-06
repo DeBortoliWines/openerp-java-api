@@ -203,6 +203,12 @@ public class Session {
 	 * @throws XmlRpcException
 	 */
 	public RowCollection searchAndReadObject(String objectName, Object [][] filter, String [] fields, int batchSize, RowsReadListener rowListener) throws XmlRpcException {
+		if (filter == null)
+			filter = new Object [][]{};
+		
+		if (fields == null)
+			fields = new String []{};
+		
 		Object[] idList = searchObject(objectName,filter);	
 
 		RowCollection resultlist = null;
@@ -244,12 +250,12 @@ public class Session {
 	 * @return
 	 * @throws XmlRpcException
 	 */
-	public Object writeObject(String objectName, int id, HashMap<String, Object> valueList) throws XmlRpcException{
-		Object result = null;
+	public boolean writeObject(String objectName, int id, HashMap<String, Object> valueList) throws XmlRpcException{
+		boolean result = false;
 		
 		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
 		Object[] params = new Object[] {databaseName, userID, password, objectName, "write", id, valueList};
-		result = objectClient.execute("execute", params);
+		result = (Boolean) objectClient.execute("execute", params);
 		
 		return result;
 	}
@@ -289,6 +295,15 @@ public class Session {
 			throw new ImportException(result[2].toString());
 		
 		return result;
+	}
+	
+	/**
+	 * Helper function to format many2many field values for update
+	 * @param fieldValues List of ids for a many to many field, for example [1,2,3] for res.users.groups_id
+	 * @return A formatted Object that can be put into a HashMap, ready for update
+	 */
+	public Object prepareMany2ManyValue(Object [] fieldValues){
+		return new Object [][]{new Object[] {6,0, fieldValues}};
 	}
 	
 	/***
