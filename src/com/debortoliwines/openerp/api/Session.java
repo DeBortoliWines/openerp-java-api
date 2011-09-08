@@ -103,6 +103,9 @@ public class Session {
 	 * @throws XmlRpcException
 	 */
 	public Object[] searchObject(String objectName, Object [][] filter) throws XmlRpcException {
+		if (filter == null)
+			filter = new Object[][]{};
+		
 		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
 		Object[] params = new Object[] {databaseName,userID,password,objectName,"search", filter};
 		Object[] ids = (Object[]) objectClient.execute("execute", params);
@@ -304,6 +307,24 @@ public class Session {
 	 */
 	public Object prepareMany2ManyValue(Object [] fieldValues){
 		return new Object [][]{new Object[] {6,0, fieldValues}};
+	}
+	
+	/**
+	 * Returns the name_get result of an object in the OpenERP server.
+	 * @param objectName Object name to invoke the name_get on
+	 * @param ids Database IDs to invoke the name_get for
+	 * @return An Object[] with an entry for each ID.  Each entry is another Object [] with index 0 being the ID and index 1 being the Name
+	 * @throws XmlRpcException
+	 */
+	public Object[] nameGet(String objectName, Object[] ids) throws XmlRpcException{
+		Object[] result = null;
+		
+		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
+		
+		Object[] params = new Object[] {databaseName, userID, password, objectName, "name_get", ids};
+		result = (Object[]) objectClient.execute("execute", params);
+		
+		return result;
 	}
 	
 	/***
