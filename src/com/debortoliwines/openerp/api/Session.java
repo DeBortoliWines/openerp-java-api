@@ -98,16 +98,15 @@ public class Session {
 	/***
 	 * Searches for objects that satisfies the filter
 	 * @param objectName The object name to do a search for
-	 * @param filter For example new Object[][] { new Object [] {"customer","=",true}}
+	 * @param filter A filter collection that contains a list of filters to be applied.  Null if no filter should be applied.
 	 * @return Array of ID's for the objects found
 	 * @throws XmlRpcException
 	 */
-	public Object[] searchObject(String objectName, Object [][] filter) throws XmlRpcException {
-		if (filter == null)
-			filter = new Object[][]{};
+	public Object[] searchObject(String objectName, FilterCollection filter) throws XmlRpcException {
+		Object[][] xmlrpcFilter = (filter == null ? new Object[][]{} : filter.getFilters());
 		
 		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
-		Object[] params = new Object[] {databaseName,userID,password,objectName,"search", filter};
+		Object[] params = new Object[] {databaseName,userID,password,objectName,"search", xmlrpcFilter};
 		Object[] ids = (Object[]) objectClient.execute("execute", params);
 		return ids;
 	}
@@ -180,12 +179,12 @@ public class Session {
 	/***
 	 * Combines the searchObject and readObject calls.  Allows for easy read of all data
 	 * @param objectName Name of the object to return data for
-	 * @param filter For example new Object[][] { new Object [] {"customer","=",true}}
+	 * @param filter A filter collection that contains a list of filters to be applied
 	 * @param fields List of fields to return data for
 	 * @return A collection of rows for an OpenERP object
 	 * @throws XmlRpcException
 	 */
-	public RowCollection searchAndReadObject(String objectName, Object [][] filter, String [] fields) throws XmlRpcException {
+	public RowCollection searchAndReadObject(String objectName, FilterCollection filter, String [] fields) throws XmlRpcException {
 		
 		return searchAndReadObject(objectName,filter,fields,0,new RowsReadListener() {
 			@Override
@@ -198,17 +197,14 @@ public class Session {
 	/***
 	 * Combines the searchObject and readObject calls and returns rows in batches.  Useful for multi-threaded ETL applications.
 	 * @param objectName Name of the object to return data for
-	 * @param filter For example new Object[][] { new Object [] {"customer","=",true}}
+	 * @param filter A filter collection that contains a list of filters to be applied 
 	 * @param fields List of fields to return data for
 	 * @param batchSize Number of rows to include in one batch.  A value of 0 or less creates one big batch.
 	 * @param rowListener Row listener to call after a batch of rows were fetched from the OpenERP server
 	 * @return The last batch that was collected.
 	 * @throws XmlRpcException
 	 */
-	public RowCollection searchAndReadObject(String objectName, Object [][] filter, String [] fields, int batchSize, RowsReadListener rowListener) throws XmlRpcException {
-		if (filter == null)
-			filter = new Object [][]{};
-		
+	public RowCollection searchAndReadObject(String objectName, FilterCollection filter, String [] fields, int batchSize, RowsReadListener rowListener) throws XmlRpcException {
 		if (fields == null)
 			fields = new String []{};
 		
