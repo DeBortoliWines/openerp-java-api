@@ -19,6 +19,7 @@
 
 package com.debortoliwines.openerp.api;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 /***
@@ -120,6 +121,20 @@ public class Field {
 		if (value == null)
 			return true;
 		else return (Boolean) value;
+	}
+
+	public ArrayList<SelectionOption> getSelectionOptions(){
+		if (this.getType() != FieldType.SELECTION)
+			return null;
+
+		ArrayList<SelectionOption> options = new ArrayList<SelectionOption>();
+		Object values = getFieldProperty("selection");
+		if (values instanceof Object[])
+			for(Object val : (Object []) values){
+				Object [] multiVal = (Object[]) val;
+				options.add(new SelectionOption(multiVal[0].toString(), multiVal[1].toString()));
+			}
+		return options;
 	}
 
 	/**
