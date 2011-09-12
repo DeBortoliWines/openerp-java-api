@@ -19,27 +19,27 @@
 
 package com.debortoliwines.openerp.api;
 
-public class ImportException extends Exception {
+import java.util.HashMap;
 
-	private static final long serialVersionUID = 3148147969903379455L;
+public class Context extends HashMap<String, Object>{
 
-	public ImportException() {
-		// TODO Auto-generated constructor stub
+	private static final long serialVersionUID = 1L;
+	final String ActiveTestTag = "active_test";
+	
+	public Context(){
+		super();
+		
+		// Default context values
+		this.put(ActiveTestTag, true);
 	}
 
-	public ImportException(String message) {
-		super(message);
-		// TODO Auto-generated constructor stub
+	public boolean getActiveTest(){
+		return Boolean.getBoolean(this.get(ActiveTestTag).toString());
 	}
-
-	public ImportException(Throwable cause) {
-		super(cause);
-		// TODO Auto-generated constructor stub
+	
+	public void setActiveTest(boolean active_test){
+		this.remove(ActiveTestTag);
+		this.put(ActiveTestTag, active_test);
 	}
-
-	public ImportException(String message, Throwable cause) {
-		super(message, cause);
-		// TODO Auto-generated constructor stub
-	}
-
+	
 }

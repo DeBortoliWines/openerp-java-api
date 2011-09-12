@@ -39,6 +39,7 @@ public class Session {
 	private String userName;
 	private String password;
 	private int userID;
+	private Context context = new Context();
 
 	/***
 	 * Session constructor
@@ -106,7 +107,7 @@ public class Session {
 		Object[][] xmlrpcFilter = (filter == null ? new Object[][]{} : filter.getFilters());
 		
 		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
-		Object[] params = new Object[] {databaseName,userID,password,objectName,"search", xmlrpcFilter};
+		Object[] params = new Object[] {databaseName,userID,password,objectName,"search", xmlrpcFilter, 0, false, false, context, false};
 		Object[] ids = (Object[]) objectClient.execute("execute", params);
 		return ids;
 	}
@@ -265,10 +266,10 @@ public class Session {
 	 * @param fieldList List of fields to update
 	 * @param rows Rows to import.  Fields must be in the same order as the 'fieldList' parameter
 	 * @return The result returned from the server
-	 * @throws ImportException 
+	 * @throws OpeneERPApiException 
 	 * @throws XmlRpcException 
 	 */
-	public Object [] importData(String objectName, String[] fieldList, ArrayList<Object[]> rows) throws XmlRpcException, ImportException{
+	public Object [] importData(String objectName, String[] fieldList, ArrayList<Object[]> rows) throws XmlRpcException, OpeneERPApiException{
 		Object [][] convertedRows = rows.toArray(new Object[rows.size()][]);
 		return importData(objectName, fieldList, convertedRows);
 	}
@@ -280,18 +281,23 @@ public class Session {
 	 * @param rows Rows to import.  Fields must be in the same order as the 'fieldList' parameter
 	 * @return The result returned from the server
 	 * @throws XmlRpcException 
-	 * @throws ImportException 
+	 * @throws OpeneERPApiException 
 	 */
-	public Object [] importData(String objectName, String[] fieldList, Object [][] rows) throws XmlRpcException, ImportException {
+	public Object [] importData(String objectName, String[] fieldList, Object [][] rows) throws XmlRpcException, OpeneERPApiException {
 		Object [] result = null;
 		
+		if (rows[0][0].toString().equals("130")){
+			String s = "";
+			String b = s;
+		}
+		
 		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
-		Object[] params = new Object[] {databaseName, userID, password, objectName, "import_data", fieldList, rows};
+		Object[] params = new Object[] {databaseName, userID, password, objectName, "import_data", fieldList, rows, "init", "", false, context};
 		result = (Object []) objectClient.execute("execute", params);
 		
 		// Should return the number of rows committed.  If there was an error, it returns -1
 		if ((Integer) result[0] != rows.length)
-			throw new ImportException(result[2].toString());
+			throw new OpeneERPApiException(result[2].toString());
 		
 		return result;
 	}
@@ -321,6 +327,10 @@ public class Session {
 		result = (Object[]) objectClient.execute("execute", params);
 		
 		return result;
+	}
+	
+	public Context getContext(){
+		return context;
 	}
 	
 	/***
