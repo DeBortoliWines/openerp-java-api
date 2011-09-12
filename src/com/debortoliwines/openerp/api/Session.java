@@ -286,11 +286,6 @@ public class Session {
 	public Object [] importData(String objectName, String[] fieldList, Object [][] rows) throws XmlRpcException, OpeneERPApiException {
 		Object [] result = null;
 		
-		if (rows[0][0].toString().equals("130")){
-			String s = "";
-			String b = s;
-		}
-		
 		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
 		Object[] params = new Object[] {databaseName, userID, password, objectName, "import_data", fieldList, rows, "init", "", false, context};
 		result = (Object []) objectClient.execute("execute", params);
@@ -329,8 +324,46 @@ public class Session {
 		return result;
 	}
 	
+	/**
+	 * Retrieves the context object for the session to set properties on 
+	 * @return
+	 */
 	public Context getContext(){
 		return context;
+	}
+	
+	/**
+	 * Deletes objects from the OpenERP Server
+	 * @param objectName Object name to delete rows from
+	 * @param ids List of ids to delete data from
+	 * @return If the command was successful
+	 * @throws XmlRpcException
+	 */
+	public boolean unlinkObject(String objectName, Object [] ids) throws XmlRpcException {
+		boolean result = false;
+		
+		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
+		Object[] params = new Object[] {databaseName, userID, password, objectName, "unlink", ids};
+		result = (Boolean) objectClient.execute("execute", params);
+		
+		return result;
+	}
+	
+	/**
+	 * Creates a single objects
+	 * @param objectName Name of the object to create
+	 * @param values Hashmap of values to assign to the new object
+	 * @return The database D of the new object
+	 * @throws XmlRpcException
+	 */
+	public Object createObject(String objectName, HashMap<String, Object> values) throws XmlRpcException{
+		Object id;
+		
+		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
+		Object[] params = new Object[] {databaseName, userID, password, objectName, "create", values, context};
+		id = objectClient.execute("execute", params);
+		
+		return id;
 	}
 	
 	/***
