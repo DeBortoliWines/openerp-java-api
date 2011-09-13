@@ -104,7 +104,7 @@ public class Session {
 	 * @throws XmlRpcException
 	 */
 	public Object[] searchObject(String objectName, FilterCollection filter) throws XmlRpcException {
-		Object[][] xmlrpcFilter = (filter == null ? new Object[][]{} : filter.getFilters());
+		Object[] xmlrpcFilter = (filter == null ? new Object[]{} : filter.getFilters());
 		
 		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
 		Object[] params = new Object[] {databaseName,userID,password,objectName,"search", xmlrpcFilter, 0, false, false, context, false};
