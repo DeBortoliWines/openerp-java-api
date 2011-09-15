@@ -31,8 +31,11 @@ public class RowCollection extends ArrayList<Row> {
 
 	private static final long serialVersionUID = -168965138153400087L;
 	
+	public RowCollection(){
+	}
+	
 	@SuppressWarnings("unchecked")
-	public RowCollection(Object [] openERPResultSet, FieldCollection fields){
+	public RowCollection(Object [] openERPResultSet, FieldCollection fields) throws OpeneERPApiException{
 		for (int i = 0; i < openERPResultSet.length; i++){
 			Row row = new Row((HashMap<String, Object>) openERPResultSet[i], fields);
 			this.add(row);

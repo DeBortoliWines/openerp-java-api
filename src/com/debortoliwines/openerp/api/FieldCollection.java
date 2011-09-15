@@ -29,5 +29,5 @@ import java.util.ArrayList;
 public class FieldCollection extends ArrayList<Field> {
 
 	private static final long serialVersionUID = 470551054665276346L;
-
+	
 }

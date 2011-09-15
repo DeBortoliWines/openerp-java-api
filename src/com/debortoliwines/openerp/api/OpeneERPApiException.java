@@ -19,13 +19,14 @@
 
 package com.debortoliwines.openerp.api;
 
+/**
+ * 
+ * @author Pieter van der Merwe
+ *
+ */
 public class OpeneERPApiException extends Exception {
 
 	private static final long serialVersionUID = 3148147969903379455L;
-
-	public OpeneERPApiException() {
-		// TODO Auto-generated constructor stub
-	}
 
 	public OpeneERPApiException(String message) {
 		super(message);

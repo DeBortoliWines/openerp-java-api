@@ -21,11 +21,19 @@ package com.debortoliwines.openerp.api;
 
 import java.util.HashMap;
 
+/**
+ * Provides the context object that is used in calls to the server.
+ * @author Pieter van der Merwe
+ *
+ */
 public class Context extends HashMap<String, Object>{
 
 	private static final long serialVersionUID = 1L;
 	final String ActiveTestTag = "active_test";
 	
+	/**
+	 * Default constructor
+	 */
 	public Context(){
 		super();
 		
@@ -33,10 +41,18 @@ public class Context extends HashMap<String, Object>{
 		this.put(ActiveTestTag, true);
 	}
 
+	/**
+	 * Retrieves the active_test context property.
+	 * @return True if set.  
+	 */
 	public boolean getActiveTest(){
 		return Boolean.getBoolean(this.get(ActiveTestTag).toString());
 	}
 	
+	/**
+	 * Sets the active_test context flag.  If true, only active items are returned by default when calling the ReadObject item.
+	 * @param active_test
+	 */
 	public void setActiveTest(boolean active_test){
 		this.remove(ActiveTestTag);
 		this.put(ActiveTestTag, active_test);

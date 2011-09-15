@@ -31,7 +31,7 @@ import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
  * An XMLRRPC Client that connects to OpenERP 
  * @author Pieter van der Merwe
  */
-public class OpenERPClient extends XmlRpcClient {
+public class OpenERPXmlRpcProxy extends XmlRpcClient {
 	
 	/**
 	 * Enum for the main RPC services that OpenERP expose 
@@ -52,7 +52,7 @@ public class OpenERPClient extends XmlRpcClient {
 	 * @param port XML-RPC port number to connect to.  Typically 8069.
 	 * @param rpcObjectType 
 	 */
-	public OpenERPClient(String host, int port, RPCServices service) {
+	public OpenERPXmlRpcProxy(String host, int port, RPCServices service) {
 		super();
 		
 		String URL = "";
@@ -89,7 +89,7 @@ public class OpenERPClient extends XmlRpcClient {
 	 */
 	public static ArrayList<String> getDatabaseList (String host, int port) throws XmlRpcException
 	{
-		OpenERPClient client = new OpenERPClient(host, port, RPCServices.RPC_DATABASE);
+		OpenERPXmlRpcProxy client = new OpenERPXmlRpcProxy(host, port, RPCServices.RPC_DATABASE);
 		
 		//Retrieve databases
 		Object [] result = (Object []) client.execute("list", new Object[] {});

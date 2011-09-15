@@ -20,15 +20,13 @@
 package com.debortoliwines.openerp.api;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 
 import org.apache.xmlrpc.XmlRpcException;
 
-import com.debortoliwines.openerp.api.OpenERPClient.RPCServices;
+import com.debortoliwines.openerp.api.OpenERPXmlRpcProxy.RPCServices;
 
 /***
- * Manages an OpenERP session 
+ * Manages an OpenERP session by holding context and initiating all calls to the server.
  * @author Pieter van der Merwe
  *
  */
@@ -58,8 +56,22 @@ public class Session {
 		this.password = password;
 	}
 	
-	public CommandWrapper getCommandWrapper(){
-		return new CommandWrapper(this);
+	/**
+	 * Returns an initialized OpenERPCommand object for ease of reference.
+	 * A OpenERPCommand provides basic calls to the server
+	 * @return
+	 */
+	public OpenERPCommand getOpenERPCommand(){
+		return new OpenERPCommand(this);
+	}
+	
+	/**
+	 * Returns an initialized ObjectAdapter object for ease of reference.
+	 * A ObjectAdapter object does type conversions and error checking before making a call to the server
+	 * @return
+	 */
+	public ObjectAdapter getObjectAdapter(String objectName) throws XmlRpcException, OpeneERPApiException{
+		return new ObjectAdapter(this, objectName);
 	}
 
 	/***
@@ -68,7 +80,7 @@ public class Session {
 	 */
 	public void startSession() throws Exception {
 
-		ArrayList<String> dbList = OpenERPClient.getDatabaseList(host,port);
+		ArrayList<String> dbList = OpenERPXmlRpcProxy.getDatabaseList(host,port);
 		if (dbList.indexOf(databaseName) < 0){
 			StringBuffer dbListBuff = new StringBuffer();
 			for (String dbName : dbList)
@@ -80,7 +92,7 @@ public class Session {
 		}
 
 		// Connect
-		OpenERPClient commonClient = new OpenERPClient(host, port, RPCServices.RPC_COMMON);
+		OpenERPXmlRpcProxy commonClient = new OpenERPXmlRpcProxy(host, port, RPCServices.RPC_COMMON);
 		Object id = commonClient.execute("login", new Object[] { databaseName, userName, password });
 
 		if (id instanceof Integer)
@@ -98,18 +110,29 @@ public class Session {
 	 */
 	public ArrayList<String> getDatabaseList (String host, int port) throws XmlRpcException
 	{
-		return OpenERPClient.getDatabaseList(host, port);
+		return OpenERPXmlRpcProxy.getDatabaseList(host, port);
 	}
 	
-	public Object executeCommand(String objectName, String commandName, Object[] parameters) throws XmlRpcException {
+	/**
+	 * Executes any command on the server linked to the /xmlrpc/object service.
+	 * All parameters are prepended by: "databaseName,userID,password"
+	 * @param objectName Object or model name to execute the command on
+	 * @param commandName Command name to execute
+	 * @param parameters List of parameters for the command.  For easy of use, consider the OpenERPCommand object or ObjectAdapter
+	 * @return The result of the call
+	 * @throws XmlRpcException
+	 */
+	public Object executeCommand(final String objectName, final String commandName, final Object[] parameters) throws XmlRpcException {
 		Object[] connectionParams = new Object[] {databaseName,userID,password,objectName,commandName};
 		
 		// Combine the connection parameters and command parameters
-		Object[] params = new Object[connectionParams.length + parameters.length];
+		Object[] params = new Object[connectionParams.length + (parameters == null ? 0 : parameters.length)];
 		System.arraycopy(connectionParams, 0, params, 0, connectionParams.length);
-		System.arraycopy(parameters, 0, params, connectionParams.length, parameters.length);
+		
+		if (parameters != null && parameters.length > 0)
+			System.arraycopy(parameters, 0, params, connectionParams.length, parameters.length);
 		   
-		OpenERPClient objectClient = new OpenERPClient(host, port, RPCServices.RPC_OBJECT);
+		OpenERPXmlRpcProxy objectClient = new OpenERPXmlRpcProxy(host, port, RPCServices.RPC_OBJECT);
 		return objectClient.execute("execute", params);		
 	}
 	

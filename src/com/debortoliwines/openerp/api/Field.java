@@ -123,6 +123,10 @@ public class Field {
 		else return (Boolean) value;
 	}
 
+	/**
+	 * If a field is a selection field, the list of selecton options are returned.
+	 * @return
+	 */
 	public ArrayList<SelectionOption> getSelectionOptions(){
 		if (this.getType() != FieldType.SELECTION)
 			return null;
