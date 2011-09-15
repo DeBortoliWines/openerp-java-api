@@ -273,9 +273,11 @@ public class ObjectAdapter {
 				continue;
 			}
 			
-			// No other conversions required for a null value
-			if (value == null)
+			// Null values must be false
+			if (value == null){
+				outputRow[columnIndex] = false;
 				continue;
+			}
 			
 			// Check types
 			switch (fld.getType()) {
@@ -422,6 +424,83 @@ public class ObjectAdapter {
 
 		return readObject(idList,fieldArray);
 		
+	}
+	
+	private Object formatValueForWrite(Field fld, Object value){
+		if (value == null)
+			return false;
+		
+		switch (fld.getType()) {
+		case BOOLEAN:
+			value = (Boolean) value;
+			break;
+		case FLOAT:
+			value = Double.parseDouble(value.toString());
+			break;
+		case ONE2MANY:
+		case INTEGER:
+			value = (Integer) value;
+			break;
+		default:
+			value = value.toString();
+			break;
+		}
+		
+		return value; 
+	}
+	
+	/**
+	 * Writes a collection of rows to the database by calling the write function on the object the Row is holding data for
+	 * @param rows Row collection to submit
+	 * @param changesOnly Only changed values will be submitted to the database.
+	 * @return An array of logicals.  One for each row to indicate if the update was successful
+	 * @throws OpeneERPApiException
+	 * @throws XmlRpcException
+	 */
+	public Boolean[] writeObject(final RowCollection rows, final boolean changesOnly) throws OpeneERPApiException, XmlRpcException{
+		Boolean [] returnValues = new Boolean[rows.size()];
+		
+		for (int i = 0; i < rows.size(); i++)
+			returnValues[i] = writeObject(rows.get(i), changesOnly);
+		
+		return returnValues;
+	}
+	
+	/**
+	 * Writes a Row to the database by calling the write function on the object the Row is holding data for
+	 * @param row Row to be committed
+	 * @param changesOnly Only changed values will be submitted to the database.
+	 * @return If the update was successful
+	 * @throws OpeneERPApiException
+	 * @throws XmlRpcException
+	 */
+	public boolean writeObject(final Row row, boolean changesOnly) throws OpeneERPApiException, XmlRpcException{
+		HashMap<String, Object> valueList = new HashMap<String, Object>();
+		
+		Object idObj = row.get("id");
+		
+		if (idObj == null || Integer.parseInt(idObj.toString()) <= 0)
+			throw new OpeneERPApiException("Please set the id field with the database ID of the object");
+		
+		int id = Integer.parseInt(idObj.toString());
+		
+		if (changesOnly){
+			for (Field fld : row.getChangedFields())
+				valueList.put(fld.getName(), formatValueForWrite(fld,row.get(fld)));
+		}
+		else for (Field fld : row.getFields()){
+			valueList.put(fld.getName(), formatValueForWrite(fld,row.get(fld)));
+		}
+		
+		if (valueList.size() == 0)
+			return false;
+		
+		boolean success = commands.writeObject(objectName, id, valueList);
+		
+		if (success)
+			row.changesApplied();
+		
+		return success;
 	}
 
 	/**

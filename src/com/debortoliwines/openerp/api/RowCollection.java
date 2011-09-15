@@ -33,12 +33,22 @@ public class RowCollection extends ArrayList<Row> {
 	
 	public RowCollection(){
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public RowCollection(Object [] openERPResultSet, FieldCollection fields) throws OpeneERPApiException{
 		for (int i = 0; i < openERPResultSet.length; i++){
 			Row row = new Row((HashMap<String, Object>) openERPResultSet[i], fields);
 			this.add(row);
 		}
+	}
+
+	@Override
+	public void add(int index, Row element) {
+		super.add(index, element);
+	}
+
+	@Override
+	public boolean add(Row e) {
+		return super.add(e);
 	}
 }

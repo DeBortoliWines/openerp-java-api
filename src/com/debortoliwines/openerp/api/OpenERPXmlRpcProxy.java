@@ -70,7 +70,10 @@ public class OpenERPXmlRpcProxy extends XmlRpcClient {
 		}
 		
 		XmlRpcClientConfigImpl xmlrpcConfigLogin = new XmlRpcClientConfigImpl();
-		xmlrpcConfigLogin.setEnabledForExtensions(true);
+		
+		// OpenERP does not support extensions
+		xmlrpcConfigLogin.setEnabledForExtensions(false);
+		
 		// The URL is hardcoded and can not be malformed
 		try {
 			xmlrpcConfigLogin.setServerURL(new URL("http", host, port,URL));

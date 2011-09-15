@@ -19,6 +19,7 @@
 
 package com.debortoliwines.openerp.api;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import com.debortoliwines.openerp.api.Field.FieldType;
@@ -30,10 +31,11 @@ import com.debortoliwines.openerp.api.Field.FieldType;
  */
 public class Row {
 
-	private static final long serialVersionUID = -4426823347416670117L;
 	private final HashMap<String, Object> openERPResult;
 	private final FieldCollection fields;
-
+	private final ArrayList<RowChangedListener> rowChangedListeners = new ArrayList<Row.RowChangedListener>();
+	private final FieldCollection changedFields = new FieldCollection();
+	
 	/**
 	 * Default constructor
 	 * @param openERPResult The HashMap object returned from readObject. containing all data for this row
@@ -48,8 +50,17 @@ public class Row {
 		if (openERPResult.isEmpty()){
 			this.put("id", null);
 			for (int i = 0; i < fields.size(); i++)
-				this.put("id",null);
+				this.put(fields.get(i).getName(),null);
 		}
+	}
+	
+	/**
+	 * Add a listener to be notified when a row is being changed
+	 * @param listener
+	 */
+	public void addRowChangedLisener(RowChangedListener listener){
+		if (!rowChangedListeners.contains(listener))
+			rowChangedListeners.add(listener);
 	}
 	
 	/**
@@ -134,9 +145,50 @@ public class Row {
 		if (fieldType == FieldType.ONE2MANY)
 			value = new Object[]{value,null}; 
 		
-		if (openERPResult.containsKey(fieldName))
-			openERPResult.remove(fieldName);
+		// See if the value actually changed
+		if (openERPResult.containsKey(fieldName)){
+			Object oldValue = openERPResult.get(fieldName);
+			if (oldValue == null && value == null)
+					return;
+			
+			if ((oldValue == null && value != null)
+				|| (oldValue != null && value == null)
+				|| !oldValue.equals(value))
+				openERPResult.remove(fieldName);
+			else return;
+		}
 		
 		openERPResult.put(fieldName, value);
+		
+		getChangedFields().add(fld);
+		
+		for (RowChangedListener listener : rowChangedListeners)
+			listener.rowChanged(fld, this);
+		
+	}
+	
+	/**
+	 * Notifies the row that pending changes have been applied for the row to do cleanup,
+	 * for example changed fields are cleared.
+	 */
+	public void changesApplied(){
+		changedFields.clear();
+	}
+	
+	/**
+	 * Returns only fields that have changed since the row was loaded
+	 * @return
+	 */
+	public FieldCollection getChangedFields() {
+		return changedFields;
+	}
+
+	/***
+	 * Event handler to return rows
+	 * @author Pieter van der Merwe
+	 *
+	 */
+	public static interface RowChangedListener {
+		void rowChanged(Field fld, Row row);
 	}
 }
