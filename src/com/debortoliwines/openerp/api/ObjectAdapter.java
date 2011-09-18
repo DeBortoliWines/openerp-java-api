@@ -211,7 +211,11 @@ public class ObjectAdapter {
 					break;
 				}
 			}
-
+			
+			// Can't search on calculated fields
+			if (fld != null && fld.getFunc_method() == true)
+				throw new OpeneERPApiException("Can not search on function field " + fieldName);
+			
 			// Fix the value type if required for the OpenERP server
 			if (!fieldName.equals("id") && fld == null)
 				throw new OpeneERPApiException("Unknow filter field " + fieldName);
@@ -318,11 +322,20 @@ public class ObjectAdapter {
 				else idToName = modelNameCache.get(fld.getRelation());
 				
 				String newValue = "";
-				for (String singleID : value.toString().split(","))
-					if (idToName.containsKey(singleID))
-						newValue = newValue + "," + idToName.get(singleID);
-					else throw new OpeneERPApiException("Could not find " + fld.getRelation() + " with ID " + singleID);
-				
+				// Comma separated list of IDs
+				if (value instanceof String){
+					for (String singleID : value.toString().split(","))
+						if (idToName.containsKey(singleID))
+							newValue = newValue + "," + idToName.get(singleID);
+						else throw new OpeneERPApiException("Could not find " + fld.getRelation() + " with ID " + singleID);
+				}
+				else {
+					// Object[] of values -- default
+					for (Object singleID : (Object[]) value)
+						if (idToName.containsKey(singleID.toString()))
+							newValue = newValue + "," + idToName.get(singleID.toString());
+						else throw new OpeneERPApiException("Could not find " + fld.getRelation() + " with ID " + singleID.toString());
+				}
 				outputRow[columnIndex] = newValue.substring(1);
 				
 				break;
@@ -437,6 +450,9 @@ public class ObjectAdapter {
 		case FLOAT:
 			value = Double.parseDouble(value.toString());
 			break;
+		case MANY2MANY:
+			value = new Object [][]{new Object[] {6,0, (Object[]) value}};
+			break;
 		case ONE2MANY:
 		case INTEGER:
 			value = (Integer) value;
@@ -501,14 +517,5 @@ public class ObjectAdapter {
 			row.changesApplied();
 		
 		return success;
-	}
-
-	/**
-	 * Helper function to format many2many field values for update
-	 * @param fieldValues List of ids for a many to many field, for example [1,2,3] for res.users.groups_id
-	 * @return A formatted Object that can be put into a HashMap, ready for update
-	 */
-	public Object prepareMany2ManyValue(Object [] fieldValues){
-		return new Object [][]{new Object[] {6,0, fieldValues}};
 	}
 }

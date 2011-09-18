@@ -20,6 +20,7 @@
 package com.debortoliwines.openerp.api;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 
 import com.debortoliwines.openerp.api.Field.FieldType;
@@ -52,6 +53,15 @@ public class Row {
 			for (int i = 0; i < fields.size(); i++)
 				this.put(fields.get(i).getName(),null);
 		}
+	}
+	
+	/**
+	 * Returns the database ID of the object/row.
+	 * @return
+	 */
+	public int getID(){
+		Object idValue = get("id");
+		return Integer.parseInt(idValue.toString());
 	}
 	
 	/**
@@ -165,6 +175,36 @@ public class Row {
 		for (RowChangedListener listener : rowChangedListeners)
 			listener.rowChanged(fld, this);
 		
+	}
+	
+	/**
+	 * Updates the value for a Many2Many field
+	 * @param fieldName Name of the many to many field to update
+	 * @param values Object [] of ids to update the many2many field with
+	 * @param append If the values should be added to the existing values.  If not, the value is replaced.
+	 * @throws OpeneERPApiException
+	 */
+	public void putMany2ManyValue(String fieldName, Object [] values, boolean append) throws OpeneERPApiException{
+		Field fld = getField(fieldName);
+		if (fld.getType() != FieldType.MANY2MANY)
+			throw new OpeneERPApiException("Field '" + fieldName + "' is not a many2many field");
+		
+		Object currentValue = get(fieldName);
+		
+		if (currentValue == null)
+			put(fieldName,values);
+		
+		ArrayList<Object> newValues = new ArrayList<Object>();
+		
+		if (append)
+			Collections.addAll(newValues, (Object[]) currentValue);
+		
+		for (Object val :values){
+			if (!newValues.contains(val))
+				newValues.add(val);
+		}
+		
+		put(fieldName, newValues.toArray(new Object[newValues.size()]));
 	}
 	
 	/**
