@@ -283,6 +283,8 @@ public class ObjectAdapter {
 				continue;
 			}
 			
+			value = formatValueForWrite(fld, value);
+			
 			// Check types
 			switch (fld.getType()) {
 			case SELECTION:
@@ -451,11 +453,14 @@ public class ObjectAdapter {
 			value = Double.parseDouble(value.toString());
 			break;
 		case MANY2MANY:
-			value = new Object [][]{new Object[] {6,0, (Object[]) value}};
+			// For write, otherwise it is a comma separated list of strings used by import
+			if (value instanceof Object[])
+				value = new Object [][]{new Object[] {6,0, (Object[]) value}};
 			break;
 		case ONE2MANY:
 		case INTEGER:
-			value = (Integer) value;
+			// To make sure 1.0 is converted to 1
+			value = Double.valueOf(value.toString()).intValue();
 			break;
 		default:
 			value = value.toString();
@@ -517,5 +522,29 @@ public class ObjectAdapter {
 			row.changesApplied();
 		
 		return success;
+	}
+	
+	/**
+	 * Writes a Row to the database by calling the write function on the object the Row is holding data for
+	 * @param row Row to be committed
+	 * @param changesOnly Only changed values will be submitted to the database.
+	 * @return If the update was successful
+	 * @throws OpeneERPApiException
+	 * @throws XmlRpcException
+	 */
+	public void createObject(final Row row) throws OpeneERPApiException, XmlRpcException{
+
+		HashMap<String, Object> valueList = new HashMap<String, Object>();
+		for (Field fld : row.getFields())
+			valueList.put(fld.getName(), formatValueForWrite(fld,row.get(fld)));
+		
+		if (valueList.size() == 0)
+			throw new OpeneERPApiException("Row doesn't have any fields to update");
+		
+		Object id = commands.createObject(objectName, valueList);
+		
+		row.put("id", id);
+		row.changesApplied();
+		
 	}
 }

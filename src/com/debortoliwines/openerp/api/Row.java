@@ -49,7 +49,7 @@ public class Row {
 		
 		// This is a new row, add entries for every field
 		if (openERPResult.isEmpty()){
-			this.put("id", null);
+			this.put("id", 0);
 			for (int i = 0; i < fields.size(); i++)
 				this.put(fields.get(i).getName(),null);
 		}

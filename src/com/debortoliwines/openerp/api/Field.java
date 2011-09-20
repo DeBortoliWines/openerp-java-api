@@ -82,6 +82,8 @@ public class Field {
 			return FieldType.CHAR;
 		else if (fieldType.equalsIgnoreCase("text"))
 			return FieldType.TEXT;
+		else if (fieldType.equalsIgnoreCase("integer"))
+			return FieldType.INTEGER;
 		else if (fieldType.equalsIgnoreCase("boolean"))
 			return FieldType.BOOLEAN;
 		else if (fieldType.equalsIgnoreCase("float"))
