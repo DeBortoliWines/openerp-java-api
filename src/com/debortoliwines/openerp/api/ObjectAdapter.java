@@ -525,10 +525,9 @@ public class ObjectAdapter {
 	}
 	
 	/**
-	 * Writes a Row to the database by calling the write function on the object the Row is holding data for
-	 * @param row Row to be committed
-	 * @param changesOnly Only changed values will be submitted to the database.
-	 * @return If the update was successful
+	 * Creates an Object on the OpenERP server by calling the create function on the server.
+	 * The id column is set on the row after the object was successfully created
+	 * @param row Data row read data from to create the Object
 	 * @throws OpeneERPApiException
 	 * @throws XmlRpcException
 	 */
