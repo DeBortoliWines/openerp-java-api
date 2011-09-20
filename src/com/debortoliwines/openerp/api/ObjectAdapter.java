@@ -391,7 +391,7 @@ public class ObjectAdapter {
 
 		// Should return the number of rows committed.  If there was an error, it returns -1
 		if ((Integer) result[0] != importRows.length)
-			throw new OpeneERPApiException(result[2].toString());
+			throw new OpeneERPApiException(result[2].toString() + "\nRow :" + result[1].toString() + "");
 
 		return true;
 	}
