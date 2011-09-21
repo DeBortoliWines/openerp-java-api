@@ -26,7 +26,7 @@ import java.util.HashMap;
 import com.debortoliwines.openerp.api.Field.FieldType;
 
 /***
- * Encapsulates the HashMap row object that is returned by OpenERP
+ * Holds data returned from the OpenERP server.
  * @author Pieter van der Merwe
  *
  */
@@ -224,7 +224,7 @@ public class Row {
 	}
 
 	/***
-	 * Event handler to return rows
+	 * Event handler to notify listeners when a row changes values
 	 * @author Pieter van der Merwe
 	 *
 	 */

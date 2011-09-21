@@ -23,7 +23,7 @@ import java.util.HashMap;
 import org.apache.xmlrpc.XmlRpcException;
 
 /**
- * This is a wrapper class for OpenERP commands.  It uses the session object to make the call, but builds the parameters in this class
+ * Wrapper class for OpenERP commands.  It uses the session object to make the call, but builds the parameters in this class
  * @author Pieter van der Merwe
  *
  */

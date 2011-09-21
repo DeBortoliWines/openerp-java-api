@@ -22,7 +22,7 @@ package com.debortoliwines.openerp.api;
 import java.util.ArrayList;
 
 /***
- * Array of Field objects
+ * Array of Field objects.
  * @author Pieter van der Merwe
  *
  */

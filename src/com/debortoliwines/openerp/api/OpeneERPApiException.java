@@ -20,7 +20,7 @@
 package com.debortoliwines.openerp.api;
 
 /**
- * 
+ * Exception class for OpenERP API errors
  * @author Pieter van der Merwe
  *
  */

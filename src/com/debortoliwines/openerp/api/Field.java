@@ -23,12 +23,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 /***
- * Encapsulates the HashMap object returned by OpenERP
+ * Provides OpenERP field properties like data types, selection fields etc.
  * @author Pieter van der Merwe
  *
  */
 public class Field {
 	
+	/**
+	 * OpenERP field types.
+	 * @author Pieter van der Merwe
+	 *
+	 */
 	public enum FieldType {
 		INTEGER, CHAR, TEXT, BOOLEAN, FLOAT, DATETIME, DATE, MANY2ONE, ONE2MANY, MANY2MANY, SELECTION 
 	}

@@ -28,7 +28,7 @@ import com.debortoliwines.openerp.api.Field.FieldType;
 import com.debortoliwines.openerp.api.FilterCollection.FilterOperator;
 
 /**
- * Provides extra validation for making calls to the OpenERP server.  It converts data types, validates model names, validates filters, checks for nulls etc.
+ * Main class for communicating with the server.  It provides extra validation for making calls to the OpenERP server.  It converts data types, validates model names, validates filters, checks for nulls etc.
  * @author Pieter van der Merwe
  *
  */

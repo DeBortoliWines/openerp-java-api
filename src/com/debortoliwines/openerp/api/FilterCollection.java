@@ -43,7 +43,7 @@ public class FilterCollection {
 	private ArrayList<Object> filters = new ArrayList<Object>();
 	
 	/**
-	 * Filter operators.  See the filter class help for more info.
+	 * Filter operators like AND,OR,NOT.  See the filter class help for more info.
 	 * @author Pieter van der Merwe
 	 *
 	 */
