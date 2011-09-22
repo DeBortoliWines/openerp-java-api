@@ -19,9 +19,15 @@
 
 package com.debortoliwines.openerp.api;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+
+import javax.print.attribute.standard.DateTimeAtCompleted;
 
 import com.debortoliwines.openerp.api.Field.FieldType;
 
@@ -104,8 +110,9 @@ public class Row {
 	 * Fetch the data for a specific field
 	 * @param fieldName Field name to fetch data for
 	 * @return A data object.  It could be of any type, or null if the field was not found.
+	 * @throws ParseException 
 	 */
-	public Object get(String fieldName) {
+	public Object get(String fieldName){
 
 		// ID is a special case.  It is always returned in a query
 		if (fieldName != null && fieldName.equals("id"))
@@ -123,6 +130,26 @@ public class Row {
 
 		if (value instanceof Object[] && ((Object []) value).length == 0)
 			return null;
+		
+		if (fieldType == Field.FieldType.DATE){
+			DateFormat dfm = new SimpleDateFormat("yyyy-MM-dd");
+			try{
+				return dfm.parse(value.toString());
+			}
+			catch(ParseException p){
+				return null;
+			}
+		}
+		
+		if (fieldType == Field.FieldType.DATETIME){
+			DateFormat dfm = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			try{
+				return dfm.parse(value.toString());
+			}
+			catch(ParseException p){
+				return null;
+			}
+		}
 
 		return value;
 	}
