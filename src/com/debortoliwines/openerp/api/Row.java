@@ -24,10 +24,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
-
-import javax.print.attribute.standard.DateTimeAtCompleted;
 
 import com.debortoliwines.openerp.api.Field.FieldType;
 
