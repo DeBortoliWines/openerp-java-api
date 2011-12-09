@@ -39,6 +39,7 @@ public class Session {
 	private String password;
 	private int userID;
 	private Context context = new Context();
+	private static boolean connecting = false;
 
 	/***
 	 * Session constructor
@@ -93,12 +94,33 @@ public class Session {
 
 		// Connect
 		OpenERPXmlRpcProxy commonClient = new OpenERPXmlRpcProxy(host, port, RPCServices.RPC_COMMON);
-		Object id = commonClient.execute("login", new Object[] { databaseName, userName, password });
+		
+		// Synchronize all threads to login.  If you login with the same user at the same time you get concurrency
+		// errors in the OpenERP server (for example by running a multi threaded ETL process like Kettle).
+		Session.startConnecting();
+		
+		Object id = null;
+		try{
+			id = commonClient.execute("login", new Object[] { databaseName, userName, password });
+		}
+		finally{
+			Session.connecting = false;
+		}
 
 		if (id instanceof Integer)
 			userID = (Integer) id;
 		else
 			throw new Exception("Incorrect username and/or password.  Login Failed.");
+	}
+	
+	private synchronized static void startConnecting(){
+		while (Session.connecting){
+			try {
+				Thread.sleep(100);
+			}
+			catch (Exception e){}
+		}
+		Session.connecting = true;
 	}
 	
 	/***
