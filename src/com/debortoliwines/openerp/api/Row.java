@@ -128,7 +128,7 @@ public class Row {
 		if (value instanceof Object[] && ((Object []) value).length == 0)
 			return null;
 		
-		if (fieldType == Field.FieldType.DATE){
+		if (value instanceof String && fieldType == Field.FieldType.DATE){
 			DateFormat dfm = new SimpleDateFormat("yyyy-MM-dd");
 			try{
 				return dfm.parse(value.toString());
@@ -138,7 +138,7 @@ public class Row {
 			}
 		}
 		
-		if (fieldType == Field.FieldType.DATETIME){
+		if (value instanceof String && fieldType == Field.FieldType.DATETIME){
 			DateFormat dfm = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 			try{
 				return dfm.parse(value.toString());
