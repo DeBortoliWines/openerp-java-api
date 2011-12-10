@@ -19,11 +19,23 @@
 
 package com.debortoliwines.openerp.api.helpers;
 
+/**
+ * Filter helper to assist is common tasks and store some hardcoded values
+ * @author Pieter van der Merwe
+ *
+ */
 public class FilterHelper {
+	/**
+	 * Returns a list of supported operators supported by the API
+	 * @return
+	 */
 	public static String [] getOperators(){
 		return new String [] {"", "NOT", "OR"};
 	}
-	
+	/**
+	 * Returns a list of comparators supported by the API
+	 * @return
+	 */
 	public static String [] getComparators(){
 		return new String [] {"=", "!=", ">", ">=", "<", "<=", "like", "ilike", "is null", "is not null", "in", "not in", "child_of", "parent_left", "parent_right"};
 	}
