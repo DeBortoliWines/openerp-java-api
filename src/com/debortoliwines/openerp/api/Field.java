@@ -59,6 +59,34 @@ public class Field {
 		
 		return value;
 	}
+	
+	/**
+	 * Gets field property values for every object state 
+	 * @return An array of values for all states in the format [state, propvalue]
+	 */
+	public Object [][] getStateProperties(String propertyName){
+		ArrayList<Object[]> stateValues = new ArrayList<Object[]>();
+		
+		@SuppressWarnings("unchecked")
+		HashMap<String, Object> states = (HashMap<String, Object>) getFieldProperty("states");
+		
+		if (states != null){
+			Object[] stateValue = new Object[2];
+			for (Object stateKey : states.keySet()){
+				stateValue[0] = stateKey.toString();
+				
+				for (Object stateProperty : (Object[]) states.get(stateKey)){
+					Object[] statePropertyArr = (Object[]) stateProperty;
+					if (statePropertyArr[0].toString().equals(propertyName)){
+						stateValue[1] = statePropertyArr[1];
+						stateValues.add(stateValue);
+					}
+				}
+			}
+		}
+		
+		return stateValues.toArray(new Object[0][]);
+	}
 
 	/**
 	 * Get the field name 
