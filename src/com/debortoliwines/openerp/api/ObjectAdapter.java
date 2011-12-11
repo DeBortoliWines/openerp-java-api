@@ -20,6 +20,7 @@
 package com.debortoliwines.openerp.api;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 
 import org.apache.xmlrpc.XmlRpcException;
@@ -545,5 +546,55 @@ public class ObjectAdapter {
 		row.put("id", id);
 		row.changesApplied();
 		
+	}
+	
+	/**
+	 * Calls any function on an object.
+	 * The first row is inspected to determine data fields and data types  
+	 * The OpenERP function must have the signature like (self, cr, uid, *param) and return a dictionary or object.
+	 * @param functionName function to call
+	 * @param parameters Additional parameters that will be passed to the object 
+	 * @return A row collection with the data
+	 * @throws XmlRpcException
+	 * @throws OpeneERPApiException
+	 */
+	public RowCollection callFunction(String functionName, Object[] parameters) throws XmlRpcException, OpeneERPApiException{
+		Object[] results = commands.callObjectFunction(objectName, functionName, parameters);
+		
+		// Go through the first row and fetch the fields
+		FieldCollection fieldCol = new FieldCollection();
+		if (results.length > 0){
+			@SuppressWarnings("unchecked")
+			HashMap<String, Object> rowMap = (HashMap<String, Object>) results[0];
+			for (String field : rowMap.keySet()){
+				HashMap<String, Object> fldDetails = new HashMap<String, Object>();
+				fldDetails.put("name", field);
+				fldDetails.put("description", field);
+				
+				@SuppressWarnings({ "rawtypes"})
+				Class type = rowMap.get(field).getClass();
+				if (type == String.class){
+					fldDetails.put("type", "char");
+				}
+				else if (type == Date.class){
+					fldDetails.put("type", "date");
+				}
+				else if (type == Boolean.class){
+					fldDetails.put("type", "boolean");
+				}
+				else if (type == Double.class){
+					fldDetails.put("type", "float");
+				}
+				else if (type == Integer.class){
+					fldDetails.put("type", "integer");
+				}
+				else fldDetails.put("type", "char");
+				fieldCol.add(new Field(field,fldDetails));
+			}
+		}
+
+		RowCollection rows = new RowCollection(results, fieldCol);
+
+		return rows;
 	}
 }

@@ -151,6 +151,20 @@ public class OpenERPCommand {
 		return session.executeCommand(objectName, "create", new Object[] {values, session.getContext()});
 	}
 	
+	/**
+	 * Calls any function on an object.  
+	 * The function OpenERP must have the signature like (self, cr, uid, *param) and return a dictionary or object.
+	 * *param can be replaced by separate parameters if you are sure of the number of parameters expected
+	 * @param objectName Object name where the function exists
+	 * @param functionName function to call
+	 * @param parameters Additional parameters that will be passed to the object 
+	 * @return An Object array of values
+	 * @throws XmlRpcException
+	 */
+	public Object[] callObjectFunction(String objectName, String functionName, Object[] parameters) throws XmlRpcException {
+		return (Object[]) session.executeCommand(objectName, functionName, parameters);
+	} 
+	
 	/***
 	 * Left here for later use if required
 	
