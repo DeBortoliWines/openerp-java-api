@@ -70,6 +70,9 @@ public class FlatViewHelper {
 		
 			Field.FieldType fieldType = fld.getType();
 			switch (fieldType) {
+			case BINARY:
+				flatViewFields.add(new FlatViewField(fld.getName(), fld, -1, objectName, fld.getName(), fld.getDescription(), Byte[].class));
+				break;
 			case BOOLEAN:
 				flatViewFields.add(new FlatViewField(fld.getName(), fld, -1, objectName, fld.getName(), fld.getDescription(), Boolean.class));
 				break;

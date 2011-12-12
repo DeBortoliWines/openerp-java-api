@@ -35,7 +35,7 @@ public class Field {
 	 *
 	 */
 	public enum FieldType {
-		INTEGER, CHAR, TEXT, BOOLEAN, FLOAT, DATETIME, DATE, MANY2ONE, ONE2MANY, MANY2MANY, SELECTION 
+		INTEGER, CHAR, TEXT, BINARY, BOOLEAN, FLOAT, DATETIME, DATE, MANY2ONE, ONE2MANY, MANY2MANY, SELECTION 
 	}
 	
 	private final String name;
@@ -117,6 +117,8 @@ public class Field {
 			return FieldType.TEXT;
 		else if (fieldType.equalsIgnoreCase("integer"))
 			return FieldType.INTEGER;
+		else if (fieldType.equalsIgnoreCase("binary"))
+			return FieldType.BINARY;
 		else if (fieldType.equalsIgnoreCase("boolean"))
 			return FieldType.BOOLEAN;
 		else if (fieldType.equalsIgnoreCase("float"))
