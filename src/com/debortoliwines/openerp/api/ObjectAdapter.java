@@ -453,6 +453,9 @@ public class ObjectAdapter {
 		case FLOAT:
 			value = Double.parseDouble(value.toString());
 			break;
+		case MANY2ONE:
+			value = Double.valueOf(value.toString()).intValue();
+			break;
 		case MANY2MANY:
 			// For write, otherwise it is a comma separated list of strings used by import
 			if (value instanceof Object[])
