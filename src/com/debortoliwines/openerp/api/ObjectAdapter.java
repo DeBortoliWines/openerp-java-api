@@ -552,50 +552,87 @@ public class ObjectAdapter {
 	}
 	
 	/**
-	 * Calls any function on an object.
-	 * The first row is inspected to determine data fields and data types  
-	 * The OpenERP function must have the signature like (self, cr, uid, *param) and return a dictionary or object.
+	 * Calls any function on an object that returns a field collection.
+	 * ie. a row is retured as [{'name' : {'type' : 'char'}]  
+	 * The OpenERP function must have the signature like (self, cr, uid, *param).
 	 * @param functionName function to call
 	 * @param parameters Additional parameters that will be passed to the object 
-	 * @return A row collection with the data
+	 * @return A field collection
 	 * @throws XmlRpcException
 	 * @throws OpeneERPApiException
 	 */
-	public RowCollection callFunction(String functionName, Object[] parameters) throws XmlRpcException, OpeneERPApiException{
+	@SuppressWarnings("unchecked")
+	public FieldCollection callFieldsFunction(String functionName, Object[] parameters) throws XmlRpcException, OpeneERPApiException{
 		Object[] results = commands.callObjectFunction(objectName, functionName, parameters);
 		
 		// Go through the first row and fetch the fields
 		FieldCollection fieldCol = new FieldCollection();
 		if (results.length > 0){
-			@SuppressWarnings("unchecked")
 			HashMap<String, Object> rowMap = (HashMap<String, Object>) results[0];
 			for (String field : rowMap.keySet()){
-				HashMap<String, Object> fldDetails = new HashMap<String, Object>();
-				fldDetails.put("name", field);
-				fldDetails.put("description", field);
+				HashMap<String, Object> fldDetails = null;
 				
-				@SuppressWarnings({ "rawtypes"})
-				Class type = rowMap.get(field).getClass();
-				if (type == String.class){
-					fldDetails.put("type", "char");
+				if (rowMap.get(field) instanceof HashMap<?, ?>){
+					try{
+						fldDetails = (HashMap<String, Object>) rowMap.get(field);
+					}
+					catch (Exception e){
+						fldDetails = null;
+					}
 				}
-				else if (type == Date.class){
-					fldDetails.put("type", "date");
+				
+				if (fldDetails == null)
+				  fldDetails = new HashMap<String, Object>();
+				
+				if (!fldDetails.containsKey("name"))
+					fldDetails.put("name", field);
+				if (!fldDetails.containsKey("description"))
+					fldDetails.put("description", field);
+				
+				if (!fldDetails.containsKey("type")){
+					@SuppressWarnings({ "rawtypes"})
+					Class type = rowMap.get(field).getClass();
+					if (type == String.class){
+						fldDetails.put("type", "char");
+					}
+					else if (type == Date.class){
+						fldDetails.put("type", "date");
+					}
+					else if (type == Boolean.class){
+						fldDetails.put("type", "boolean");
+					}
+					else if (type == Double.class){
+						fldDetails.put("type", "float");
+					}
+					else if (type == Integer.class){
+						fldDetails.put("type", "integer");
+					}
+					else fldDetails.put("type", "char");
 				}
-				else if (type == Boolean.class){
-					fldDetails.put("type", "boolean");
-				}
-				else if (type == Double.class){
-					fldDetails.put("type", "float");
-				}
-				else if (type == Integer.class){
-					fldDetails.put("type", "integer");
-				}
-				else fldDetails.put("type", "char");
 				fieldCol.add(new Field(field,fldDetails));
 			}
 		}
-
+		
+		return fieldCol;
+	}
+	
+	/**
+	 * Calls any function on an object.
+	 * The first row is inspected to determine data fields and data types  
+	 * The OpenERP function must have the signature like (self, cr, uid, *param) and return a dictionary or object.
+	 * @param functionName function to call
+	 * @param parameters Additional parameters that will be passed to the object 
+	 * @param fieldCol An option field collection to use.  A new one will be built by inspecting the first row if it isn't specified (null).
+	 * @return A row collection with the data
+	 * @throws XmlRpcException
+	 * @throws OpeneERPApiException
+	 */
+	public RowCollection callFunction(String functionName, Object[] parameters, FieldCollection fieldCol) throws XmlRpcException, OpeneERPApiException{
+		Object[] results = commands.callObjectFunction(objectName, functionName, parameters);
+		
+		if (fieldCol == null)
+			fieldCol = callFieldsFunction(functionName, parameters);
+		
 		RowCollection rows = new RowCollection(results, fieldCol);
 
 		return rows;
