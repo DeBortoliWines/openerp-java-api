@@ -39,6 +39,8 @@ public class ObjectAdapter {
 	private final OpenERPCommand commands;
 	private final FieldCollection allFields;
 	
+	private static ArrayList<String> objectList = new ArrayList<String>();
+	
 	// Cache used to store the name_get result of an model to cater for many2many relations
 	private HashMap<String, HashMap<String, String>> modelNameCache = new HashMap<String, HashMap<String, String>>();
 
@@ -53,27 +55,35 @@ public class ObjectAdapter {
 		this.commands = session.getOpenERPCommand();
 		this.objectName = objectName;
 
-		Object[] results = null;
-		try{
-			Object[] ids = commands.searchObject("ir.model", new Object[]{});
-			results = commands.readObject("ir.model", ids, new String[]{"model"});
-		}
-		catch (XmlRpcException e){
-			throw new OpeneERPApiException("Could not validate model name: ",e);
-		}
-
-		boolean found = false;
-		for (Object row : results){
-			@SuppressWarnings("unchecked")
-			String modelName = ((HashMap<String, Object>) row).get("model").toString();
-			if (modelName.equals(objectName))
-				found = true;
-		}
-
-		if (found == false)
-			throw new OpeneERPApiException("Could not find model with name '" + objectName + "'");
+		objectExists(this.commands, this.objectName);
 
 		allFields = getFields();
+	}
+	
+	/**
+	 * Validates a model name against entries in ir.model
+	 * The function is synchronized to make use of a global (static) list of objects to increase speed
+	 * @param commands  Command object to use
+	 * @param objectName Object name that needs to be validated
+	 * @throws OpeneERPApiException If the model could not be validated
+	 */
+	@SuppressWarnings("unchecked")
+	private synchronized static void objectExists(OpenERPCommand commands, String objectName) throws OpeneERPApiException{
+		if (objectList.size() == 0){
+			try{
+				Object[] ids = commands.searchObject("ir.model", new Object[]{});
+				Object [] result = commands.readObject("ir.model", ids, new String[]{"model"});
+				for (Object row : result){
+					objectList.add(((HashMap<String, Object>) row).get("model").toString());
+				}
+			}
+			catch (XmlRpcException e){
+				throw new OpeneERPApiException("Could not validate model name: ",e);
+			}
+		}
+
+		if (objectList.indexOf(objectName) < 0)
+			throw new OpeneERPApiException("Could not find model with name '" + objectName + "'");
 	}
 	
 	/**
@@ -240,7 +250,7 @@ public class ObjectAdapter {
 			}
 			else if (fld != null && fld.getType() == FieldType.FLOAT && !(value instanceof Double) )
 				value = Double.parseDouble(value.toString());
-			else if (fieldName.equals("id") || (fld.getType() == FieldType.INTEGER && !(value instanceof Integer)))
+			else if (fieldName.equals("id") && comparison.equals("=") || (fld != null && fld.getType() == FieldType.INTEGER && !(value instanceof Integer)))
 				value = Integer.parseInt(value.toString());
 
 			processedFilters.add(new Object[] {fieldName,comparison,value});
