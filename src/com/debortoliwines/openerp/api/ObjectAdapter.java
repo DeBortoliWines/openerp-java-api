@@ -113,11 +113,26 @@ public class ObjectAdapter {
 		return row;
 	}
 
-	// If you make this function public, you have to implement the search function too.
-	// Prefer using the searchAndReadObject functions
-	private RowCollection readObject(Object [] ids, String [] fields) throws XmlRpcException, OpeneERPApiException {
+	/**
+	 * Reads objects from the OpenERP server if you already have the ID's.  If you don't, use searchAndRead with filters.
+	 * @param ids List of ids to fetch objects for
+	 * @param fields List of fields to fetch data for
+	 * @return A collection of rows for an OpenERP object
+	 * @throws XmlRpcException
+	 * @throws OpeneERPApiException
+	 */
+	public RowCollection readObject(Object [] ids, String [] fields) throws XmlRpcException, OpeneERPApiException {
 
-		FieldCollection fieldCol = getFields(fields);
+		// Faster to do read existing fields that to do a server call again
+		FieldCollection fieldCol = new FieldCollection(); 
+		for (String fieldName : fields){
+			for (Field fld : allFields){
+				if (fld.getName().equals(fieldName)){
+					fieldCol.add(fld);
+				}
+			}
+		}
+		
 		Object[] results = commands.readObject(objectName, ids, fields);
 
 		RowCollection rows = new RowCollection(results, fieldCol);
