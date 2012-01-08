@@ -6,7 +6,7 @@
 	<property name="dist" value="dist"/>
 	<property name="ui"   value="ui"/>
 	<property name="libext" value="libext"/>
-	<property name="version" value="0.80" />
+	<property name="version" value="1.0.0-RC2" />
 
 	<target name="init">
 		<!-- Create the build directory structure used by compile -->
@@ -42,7 +42,7 @@
 	<target name="dist" depends="compile">
 		<!-- Create the distribution directory -->
 		<jar 
-			jarfile="${dist}/openerp-java-api.jar" 
+			jarfile="${dist}/openerp-java-api-${version}.jar" 
 			index="true">
 			<fileset dir="${dest}"> <include name="**/*"/></fileset>
 			
