@@ -54,6 +54,11 @@
 			</manifest>
 
 		</jar>
+		
+		<!-- Create java docs -->
+		<zip destfile="${dist}/openerp-java-api-${version}-javadocs.zip"
+		       basedir="doc"
+		  />
 	</target>
 	<target name="rebuild" depends="compile" />
 </project>
