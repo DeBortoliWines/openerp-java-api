@@ -27,6 +27,7 @@ import org.apache.xmlrpc.XmlRpcException;
 
 import com.debortoliwines.openerp.api.Field.FieldType;
 import com.debortoliwines.openerp.api.FilterCollection.FilterOperator;
+import com.debortoliwines.openerp.api.helpers.FilterHelper;
 
 /**
  * Main class for communicating with the server.  It provides extra validation for making calls to the OpenERP server.  It converts data types, validates model names, validates filters, checks for nulls etc.
@@ -267,7 +268,32 @@ public class ObjectAdapter {
 				value = Double.parseDouble(value.toString());
 			else if (fieldName.equals("id") && comparison.equals("=") || (fld != null && fld.getType() == FieldType.INTEGER && !(value instanceof Integer)))
 				value = Integer.parseInt(value.toString());
-
+			else if (comparison.equalsIgnoreCase("in")){
+			  if (value instanceof String){
+  			  // Split by , where the , isn't preceded by a \
+  			  String [] entries = value.toString().split("(?<!\\\\),");
+  			  Object [] valueArr = new Object[entries.length];
+  			  for (int entrIdx = 0; entrIdx < entries.length; entrIdx++){
+  			    String entry = FilterHelper.csvDecodeString(entries[entrIdx]);
+  			    
+  			    // For relation fields or integer fields we build an array of integers
+  			    if (fld != null
+  			        && (fld.getType() == FieldType.INTEGER
+  			            || fld.getType() == FieldType.ONE2MANY
+  			            || fld.getType() == FieldType.MANY2MANY)
+  			        || fieldName.equals("id")){
+  			      valueArr[entrIdx] = Integer.parseInt(entry);  
+  			    }
+  			    else valueArr[entrIdx] = entry;
+  			  }
+  			  value = valueArr;
+			  }
+			  // If it is a single value, just put it in an array
+			  else if (!(value instanceof Object[])){
+			    value = new Object[]{value};
+			  }
+			}
+			    
 			processedFilters.add(new Object[] {fieldName,comparison,value});
 		}
 		
