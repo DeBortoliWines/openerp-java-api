@@ -135,7 +135,23 @@ public class ObjectAdapter {
 		}
 		
 		Object[] results = commands.readObject(objectName, ids, fields);
+		
+/****	18/04/2012 - PvdM Maybe reconsider this piece of code for later.  Does it matter if it isn't sorted by ID?
 
+		// OpenERP doesn't use the sorting you pass (specified in the search function to get a sorted list of IDs).
+		// When they fix it, remove this section of code
+		ArrayList<Integer> idList = new ArrayList<Integer>();
+		for (Object id : ids){
+		  idList.add(Integer.parseInt(id.toString()));
+		}
+    Object[] sortedResults = new Object[ids.length];
+    for (Object result : results){
+      @SuppressWarnings("unchecked")
+      int id = Integer.parseInt(((HashMap<String, Object>)result).get("id").toString());
+      sortedResults[idList.indexOf(id)] = result;
+    }
+****/
+		
 		RowCollection rows = new RowCollection(results, fieldCol);
 
 		return rows;
@@ -266,8 +282,17 @@ public class ObjectAdapter {
 			}
 			else if (fld != null && fld.getType() == FieldType.FLOAT && !(value instanceof Double) )
 				value = Double.parseDouble(value.toString());
-			else if (fieldName.equals("id") && comparison.equals("=") || (fld != null && fld.getType() == FieldType.INTEGER && !(value instanceof Integer)))
-				value = Integer.parseInt(value.toString());
+			else if (comparison.equals("=")){
+
+			  // If a integer field is not an integer in a '=' comparison, parse it as an int
+			  if (!(value instanceof Integer)){
+			      if (fieldName.equals("id") || 
+			          (fld != null && fld.getType() == FieldType.INTEGER && !(value instanceof Integer)) ||
+			          (fld != null && fld.getType() == FieldType.MANY2ONE && !(value instanceof Integer))){
+			        value = Integer.parseInt(value.toString());
+			      }
+			  }
+			}
 			else if (comparison.equalsIgnoreCase("in")){
 			  if (value instanceof String){
   			  // Split by , where the , isn't preceded by a \
@@ -280,7 +305,8 @@ public class ObjectAdapter {
   			    if (fld != null
   			        && (fld.getType() == FieldType.INTEGER
   			            || fld.getType() == FieldType.ONE2MANY
-  			            || fld.getType() == FieldType.MANY2MANY)
+  			            || fld.getType() == FieldType.MANY2MANY
+  			            || fld.getType() == FieldType.MANY2ONE)
   			        || fieldName.equals("id")){
   			      valueArr[entrIdx] = Integer.parseInt(entry);  
   			    }
