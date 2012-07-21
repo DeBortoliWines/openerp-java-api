@@ -81,16 +81,23 @@ public class Session {
 	 */
 	public void startSession() throws Exception {
 
-		ArrayList<String> dbList = OpenERPXmlRpcProxy.getDatabaseList(host,port);
-		if (dbList.indexOf(databaseName) < 0){
-			StringBuffer dbListBuff = new StringBuffer();
-			for (String dbName : dbList)
-				dbListBuff.append(dbName + System.getProperty("line.separator"));
-
-			throw new Exception("Error while connecting to OpenERP.  Database [" + databaseName + "] "
-					+ " was not found in the following list: " + System.getProperty("line.separator") 
-					+ System.getProperty("line.separator") + dbListBuff.toString());
-		}
+	  try{
+	    // 21/07/2012 - Database listing may not be enabled (--no-database-list or list_db=false).
+	    // Only provides additional information in any case.
+  		ArrayList<String> dbList = OpenERPXmlRpcProxy.getDatabaseList(host,port);
+  		if (dbList.indexOf(databaseName) < 0){
+  			StringBuffer dbListBuff = new StringBuffer();
+  			for (String dbName : dbList)
+  				dbListBuff.append(dbName + System.getProperty("line.separator"));
+  
+  			throw new Exception("Error while connecting to OpenERP.  Database [" + databaseName + "] "
+  					+ " was not found in the following list: " + System.getProperty("line.separator") 
+  					+ System.getProperty("line.separator") + dbListBuff.toString());
+  		}
+	  }
+	  catch(Exception e){
+	    
+	  }
 
 		// Connect
 		OpenERPXmlRpcProxy commonClient = new OpenERPXmlRpcProxy(host, port, RPCServices.RPC_COMMON);
@@ -102,6 +109,12 @@ public class Session {
 		Object id = null;
 		try{
 			id = commonClient.execute("login", new Object[] { databaseName, userName, password });
+		}
+		catch (ClassCastException c){
+		  // General exception is only thrown if the database doesn't exist.
+		  // Incorrect username and password will return an id of 0.  
+		  // Incorrect server parameters (servername/port) will not be caught here  
+		  throw new Exception("Database " + databaseName + " does not exist");
 		}
 		finally{
 			Session.connecting = false;
