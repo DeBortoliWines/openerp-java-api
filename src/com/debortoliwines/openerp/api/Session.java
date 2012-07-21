@@ -23,6 +23,7 @@ import java.util.ArrayList;
 
 import org.apache.xmlrpc.XmlRpcException;
 
+import com.debortoliwines.openerp.api.OpenERPXmlRpcProxy.RPCProtocol;
 import com.debortoliwines.openerp.api.OpenERPXmlRpcProxy.RPCServices;
 
 /***
@@ -40,9 +41,28 @@ public class Session {
 	private int userID;
 	private Context context = new Context();
 	private static boolean connecting = false;
-
+	private RPCProtocol protocol; 
+	
 	/***
-	 * Session constructor
+   * Session constructor
+   * @param protocol XML-RPC protocol to use.  ex http/https.
+   * @param host Host name or IP address where the OpenERP server is hosted
+   * @param port XML-RPC port number to connect to.  Typically 8069.
+   * @param databaseName Database name to connect to
+   * @param userName Username to log into the OpenERP server
+   * @param password Password to log into the OpenERP server
+   */
+  public Session(RPCProtocol protocol, String host, int port, String databaseName, String userName, String password){
+    this.protocol = protocol;
+    this.host = host;
+    this.port = port;
+    this.databaseName = databaseName;
+    this.userName = userName;
+    this.password = password;
+  }
+	
+	/***
+	 * Session constructor.  Uses default http protocol to connect.
 	 * @param host Host name or IP address where the OpenERP server is hosted
 	 * @param port XML-RPC port number to connect to.  Typically 8069.
 	 * @param databaseName Database name to connect to
@@ -50,11 +70,7 @@ public class Session {
 	 * @param password Password to log into the OpenERP server
 	 */
 	public Session(String host, int port, String databaseName, String userName, String password){
-		this.host = host;
-		this.port = port;
-		this.databaseName = databaseName;
-		this.userName = userName;
-		this.password = password;
+		this(RPCProtocol.RPC_HTTP, host, port, databaseName, userName, password);
 	}
 	
 	/**
@@ -84,7 +100,7 @@ public class Session {
 	  try{
 	    // 21/07/2012 - Database listing may not be enabled (--no-database-list or list_db=false).
 	    // Only provides additional information in any case.
-  		ArrayList<String> dbList = OpenERPXmlRpcProxy.getDatabaseList(host,port);
+  		ArrayList<String> dbList = OpenERPXmlRpcProxy.getDatabaseList(protocol,host,port);
   		if (dbList.indexOf(databaseName) < 0){
   			StringBuffer dbListBuff = new StringBuffer();
   			for (String dbName : dbList)
@@ -100,7 +116,7 @@ public class Session {
 	  }
 
 		// Connect
-		OpenERPXmlRpcProxy commonClient = new OpenERPXmlRpcProxy(host, port, RPCServices.RPC_COMMON);
+		OpenERPXmlRpcProxy commonClient = new OpenERPXmlRpcProxy(protocol, host, port, RPCServices.RPC_COMMON);
 		
 		// Synchronize all threads to login.  If you login with the same user at the same time you get concurrency
 		// errors in the OpenERP server (for example by running a multi threaded ETL process like Kettle).
@@ -145,7 +161,7 @@ public class Session {
 	 */
 	public ArrayList<String> getDatabaseList (String host, int port) throws XmlRpcException
 	{
-		return OpenERPXmlRpcProxy.getDatabaseList(host, port);
+		return OpenERPXmlRpcProxy.getDatabaseList(protocol, host, port);
 	}
 	
 	/**
@@ -167,7 +183,7 @@ public class Session {
 		if (parameters != null && parameters.length > 0)
 			System.arraycopy(parameters, 0, params, connectionParams.length, parameters.length);
 		   
-		OpenERPXmlRpcProxy objectClient = new OpenERPXmlRpcProxy(host, port, RPCServices.RPC_OBJECT);
+		OpenERPXmlRpcProxy objectClient = new OpenERPXmlRpcProxy(protocol, host, port, RPCServices.RPC_OBJECT);
 		return objectClient.execute("execute", params);		
 	}
 	

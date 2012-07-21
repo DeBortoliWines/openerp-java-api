@@ -15,6 +15,7 @@
  *   along with OpenERPJavaAPI.  If not, see <http://www.gnu.org/licenses/>.
  *
  *   Copyright 2011 De Bortoli Wines Pty Limited (Australia)
+ *   Copyright 2012 De Bortoli Wines Pty Limited (Australia)
  */
 
 package com.debortoliwines.openerp.api;
@@ -43,16 +44,27 @@ public class OpenERPXmlRpcProxy extends XmlRpcClient {
 		RPC_DATABASE
 	}
 	
+	/**
+   * Enum for the RPC protocol used to connect to OpenERP 
+   * @author Pieter van der Merwe
+   */
+  public enum RPCProtocol {
+    RPC_HTTP,
+    RPC_HTTPS
+  }
+	
 	private final String RPC_COMMON_URL = "/xmlrpc/common";
 	private final String RPC_OBJECT_URL = "/xmlrpc/object";
 	private final String RPC_DATABASE_URL = "/xmlrpc/db";
 	
 	/**
-	 * @param host Host name or IP address where the OpenERP server is hosted
+	 * Proxy object to handle calls to and from the OpenERP server
+	 * @param protocol Protocol to use when connecting to the RPC service ex. http/https
+   * @param host Host name or IP address where the OpenERP server is hosted
 	 * @param port XML-RPC port number to connect to.  Typically 8069.
-	 * @param rpcObjectType 
+	 * @param service OpenERP webservice to call (db/common etc)
 	 */
-	public OpenERPXmlRpcProxy(String host, int port, RPCServices service) {
+	public OpenERPXmlRpcProxy(RPCProtocol protocol, String host, int port, RPCServices service) {
 		super();
 		
 		String URL = "";
@@ -69,6 +81,17 @@ public class OpenERPXmlRpcProxy extends XmlRpcClient {
 			break;
 		}
 		
+		String protocol_str = "";
+		switch (protocol) {
+    case RPC_HTTP:
+      protocol_str = "http";
+      break;
+
+    default:
+      protocol_str = "https";
+      break;
+    }
+		
 		XmlRpcClientConfigImpl xmlrpcConfigLogin = new XmlRpcClientConfigImpl();
 		
 		// OpenERP does not support extensions
@@ -76,15 +99,47 @@ public class OpenERPXmlRpcProxy extends XmlRpcClient {
 		
 		// The URL is hardcoded and can not be malformed
 		try {
-			xmlrpcConfigLogin.setServerURL(new URL("http", host, port,URL));
+			xmlrpcConfigLogin.setServerURL(new URL(protocol_str, host, port, URL));
 		} catch (MalformedURLException e) {
 		}
 	
 		this.setConfig(xmlrpcConfigLogin);
 	}
 	
+	/**
+	 * Proxy object to handle calls to and from the OpenERP server.  Uses the http protocol to connect.
+   * @param host Host name or IP address where the OpenERP server is hosted
+   * @param port XML-RPC port number to connect to.  Typically 8069.
+   * @param service OpenERP webservice to call (db/common etc)
+   */
+  public OpenERPXmlRpcProxy(String host, int port, RPCServices service) {
+    this(RPCProtocol.RPC_HTTP, host, port, service);
+  }
+	
+  /***
+   * Get a list of databases available on a specific host and port
+   * @param protocol Protocol to use when connecting to the RPC service ex. http/https
+   * @param host Host name or IP address where the OpenERP server is hosted
+   * @param port XML-RPC port number to connect to
+   * @return A list of databases available for the OpenERP instance
+   * @throws XmlRpcException
+   */
+  public static ArrayList<String> getDatabaseList (RPCProtocol protocol, String host, int port) throws XmlRpcException
+  {
+    OpenERPXmlRpcProxy client = new OpenERPXmlRpcProxy(protocol, host, port, RPCServices.RPC_DATABASE);
+    
+    //Retrieve databases
+    Object [] result = (Object []) client.execute("list", new Object[] {});
+
+    ArrayList<String> finalResults = new ArrayList<String>();
+    for (Object res : result)
+      finalResults.add((String) res);
+
+    return finalResults;
+  }
+  
 	/***
-	 * Get a list of databases available on a specific host and port
+	 * Get a list of databases available on a specific host and port with the http protocol.
 	 * @param host Host name or IP address where the OpenERP server is hosted
 	 * @param port XML-RPC port number to connect to
 	 * @return A list of databases available for the OpenERP instance
@@ -92,15 +147,6 @@ public class OpenERPXmlRpcProxy extends XmlRpcClient {
 	 */
 	public static ArrayList<String> getDatabaseList (String host, int port) throws XmlRpcException
 	{
-		OpenERPXmlRpcProxy client = new OpenERPXmlRpcProxy(host, port, RPCServices.RPC_DATABASE);
-		
-		//Retrieve databases
-		Object [] result = (Object []) client.execute("list", new Object[] {});
-
-		ArrayList<String> finalResults = new ArrayList<String>();
-		for (Object res : result)
-			finalResults.add((String) res);
-
-		return finalResults;
+		return getDatabaseList(RPCProtocol.RPC_HTTP, host, port);
 	}
 }
