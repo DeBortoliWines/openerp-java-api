@@ -65,7 +65,7 @@ public class Context extends HashMap<String, Object>{
 	 * Gets the 'lang' context value.
 	 * @return Language or null if the property doesn't exist.
 	 */
-	public String getLang() {
+	public String getLanguage() {
     if (!this.containsKey(LangTag))
       return null;
 
@@ -76,7 +76,7 @@ public class Context extends HashMap<String, Object>{
 	 * Sets the 'lang' context value.
 	 * @param lang Examples "en_US", "nl_NL"
 	 */
-	public void setLang(String lang) {
+	public void setLanguage(String lang) {
 	  this.remove(LangTag);
 	  this.put(LangTag, lang);
 	}
