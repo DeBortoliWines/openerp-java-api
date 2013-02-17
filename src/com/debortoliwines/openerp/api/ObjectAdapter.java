@@ -40,9 +40,12 @@ public class ObjectAdapter {
 	private final OpenERPCommand commands;
 	private final FieldCollection allFields;
 	
-	private static ArrayList<String> objectList = new ArrayList<String>();
+	// Object name cache so the adapter doesn't have to reread model names from the database for every new object.
+	// Bulk loads/reads can become very slow if every adapter requires a call back to the server
+	private static ArrayList<String> objectNameCache = new ArrayList<String>();
 	
-	// Cache used to store the name_get result of an model to cater for many2many relations
+	// Cache used to store the name_get result of an model to cater for many2many relations in the import function
+	// It is cleared every time the import function is called for a specific object
 	private HashMap<String, HashMap<String, String>> modelNameCache = new HashMap<String, HashMap<String, String>>();
 
 	/**
@@ -70,12 +73,15 @@ public class ObjectAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	private synchronized static void objectExists(OpenERPCommand commands, String objectName) throws OpeneERPApiException{
-		if (objectList.size() == 0){
+		// If you can't find the object name, reload the cache.  Somebody may have added a new module after the cache was created
+	  // Ticket #1 from sourceforge
+	  if (objectNameCache.indexOf(objectName) < 0){
+		  objectNameCache.clear();
 			try{
 				Object[] ids = commands.searchObject("ir.model", new Object[]{});
 				Object [] result = commands.readObject("ir.model", ids, new String[]{"model"});
 				for (Object row : result){
-					objectList.add(((HashMap<String, Object>) row).get("model").toString());
+					objectNameCache.add(((HashMap<String, Object>) row).get("model").toString());
 				}
 			}
 			catch (XmlRpcException e){
@@ -83,7 +89,7 @@ public class ObjectAdapter {
 			}
 		}
 
-		if (objectList.indexOf(objectName) < 0)
+		if (objectNameCache.indexOf(objectName) < 0)
 			throw new OpeneERPApiException("Could not find model with name '" + objectName + "'");
 	}
 	
