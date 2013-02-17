@@ -14,15 +14,16 @@
  *   You should have received a copy of the GNU Lesser General Public License
  *   along with OpenERPJavaAPI.  If not, see <http://www.gnu.org/licenses/>.
  *
- *   Copyright 2011 De Bortoli Wines Pty Limited (Australia)
+ *   Copyright 2011,2013 De Bortoli Wines Pty Limited (Australia)
  */
 
 package com.debortoliwines.openerp.api;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Provides the context object that is used in calls to the server.
+ * Provides the session context object that is used in calls to the server.
  * @author Pieter van der Merwe
  *
  */
@@ -30,27 +31,29 @@ public class Context extends HashMap<String, Object>{
 
 	private static final long serialVersionUID = 1L;
 	final String ActiveTestTag = "active_test";
+	final String LangTag = "lang";
+	final String TimezoneTag = "tz";
 	
-	/**
-	 * Default constructor
-	 */
-	public Context(){
-		super();
-		
-		// Default context values
-		this.put(ActiveTestTag, true);
+
+	@Override
+	public void putAll(Map<? extends String, ? extends Object> m) {
+	  // TODO Auto-generated method stub
+	  super.putAll(m);
 	}
 
 	/**
-	 * Retrieves the active_test context property.
-	 * @return True if set.  
+	 * Gets the active_test context property.
+	 * @return The active_test value or null if the property doesn't exist.
 	 */
-	public boolean getActiveTest(){
-		return Boolean.getBoolean(this.get(ActiveTestTag).toString());
+	public Boolean getActiveTest(){
+	  if (!this.containsKey(ActiveTestTag))
+      return null;
+	  
+	  return Boolean.parseBoolean(this.get(ActiveTestTag).toString());
 	}
 	
 	/**
-	 * Sets the active_test context flag.  If true, only active items are returned by default when calling the ReadObject item.
+	 * Sets the active_test context value.  If true, only active items are returned by default when calling the ReadObject item.
 	 * @param active_test
 	 */
 	public void setActiveTest(boolean active_test){
@@ -58,4 +61,46 @@ public class Context extends HashMap<String, Object>{
 		this.put(ActiveTestTag, active_test);
 	}
 	
+	/**
+	 * Gets the 'lang' context value.
+	 * @return Language or null if the property doesn't exist.
+	 */
+	public String getLang() {
+    if (!this.containsKey(LangTag))
+      return null;
+
+	  return this.get(LangTag).toString();
+	}
+	
+  /**
+	 * Sets the 'lang' context value.
+	 * @param lang Examples "en_US", "nl_NL"
+	 */
+	public void setLang(String lang) {
+	  this.remove(LangTag);
+	  this.put(LangTag, lang);
+	}
+	
+	/**
+   * Gets the 'tz' context value.
+   * @return Time zone string or null if the property doesn't exist
+   */
+  public String getTimeZone() {
+    if (!this.containsKey(TimezoneTag))
+      return null;
+    
+    if (this.get(TimezoneTag) instanceof Boolean && Boolean.getBoolean(this.get(TimezoneTag).toString()) == false)
+      return null;
+      
+    return this.get(TimezoneTag).toString();
+  }
+  
+  /**
+   * Sets the 'tz' context flag.
+   * @param tz Examples "Australia/Sydney", "Europe/Brussels"
+   */
+  public void setTimeZone(String tz) {
+    this.remove(TimezoneTag);
+    this.put(TimezoneTag, tz);
+  }
 }

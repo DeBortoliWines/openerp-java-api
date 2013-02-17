@@ -14,7 +14,7 @@
  *   You should have received a copy of the GNU Lesser General Public License
  *   along with OpenERPJavaAPI.  If not, see <http://www.gnu.org/licenses/>.
  *
- *   Copyright 2011 De Bortoli Wines Pty Limited (Australia)
+ *   Copyright 2011,2013 De Bortoli Wines Pty Limited (Australia)
  */
 
 package com.debortoliwines.openerp.api;
@@ -75,7 +75,7 @@ public class OpenERPCommand {
 	 */
 	@SuppressWarnings("unchecked")
 	public HashMap<String, Object> getFields(String objectName, String[] filterFields) throws XmlRpcException {
-		return (HashMap<String, Object>) session.executeCommand(objectName, "fields_get", new Object[]{filterFields});
+		return (HashMap<String, Object>) session.executeCommand(objectName, "fields_get", new Object[]{filterFields, session.getContext() });
 	}
 
 	/**
@@ -87,7 +87,7 @@ public class OpenERPCommand {
 	 * @throws XmlRpcException
 	 */
 	public Object[] readObject(String objectName, Object [] ids, String [] fields) throws XmlRpcException {
-		return (Object[]) session.executeCommand(objectName, "read", new Object[] {ids, fields});
+		return (Object[]) session.executeCommand(objectName, "read", new Object[] {ids, fields, session.getContext()});
 	}
 	
 	/**

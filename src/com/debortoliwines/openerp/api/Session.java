@@ -14,12 +14,13 @@
  *   You should have received a copy of the GNU Lesser General Public License
  *   along with OpenERPJavaAPI.  If not, see <http://www.gnu.org/licenses/>.
  *
- *   Copyright 2011 De Bortoli Wines Pty Limited (Australia)
+ *   Copyright 2011-2013 De Bortoli Wines Pty Limited (Australia)
  */
 
 package com.debortoliwines.openerp.api;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.apache.xmlrpc.XmlRpcException;
 
@@ -140,6 +141,15 @@ public class Session {
 			userID = (Integer) id;
 		else
 			throw new Exception("Incorrect username and/or password.  Login Failed.");
+		
+    this.context.clear();
+    @SuppressWarnings("unchecked")
+    HashMap<String, Object> openerpContext = (HashMap<String, Object>) this.executeCommand("res.users","context_get", new Object[]{});
+    this.context.putAll(openerpContext);
+    
+    // Standard behavior is web/gui clients.
+    this.context.setActiveTest(true);
+
 	}
 	
 	private synchronized static void startConnecting(){
