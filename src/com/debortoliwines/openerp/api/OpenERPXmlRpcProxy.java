@@ -157,7 +157,7 @@ public class OpenERPXmlRpcProxy extends XmlRpcClient {
    * @return The version number as a String
    * @throws XmlRpcException
    */
-  public static String getServerVersion (String host, int port) throws XmlRpcException
+  public static Version getServerVersion (String host, int port) throws XmlRpcException
   {
     return getServerVersion(RPCProtocol.RPC_HTTP, host, port);
   }
@@ -170,10 +170,10 @@ public class OpenERPXmlRpcProxy extends XmlRpcClient {
    * @return The version number as a String
    * @throws XmlRpcException
    */
-  public static String getServerVersion (RPCProtocol protocol, String host, int port) throws XmlRpcException
+  public static Version getServerVersion (RPCProtocol protocol, String host, int port) throws XmlRpcException
   {
     OpenERPXmlRpcProxy client = new OpenERPXmlRpcProxy(protocol, host, port, RPCServices.RPC_DATABASE);
     
-    return client.execute("server_version", new Object[] {}).toString();
+    return new Version(client.execute("server_version", new Object[] {}).toString());
   }
 }
