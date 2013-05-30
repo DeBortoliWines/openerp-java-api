@@ -118,6 +118,12 @@ public class OpenERPCommand {
 		return (Object []) session.executeCommand(objectName, "import_data", new Object[] {fieldList, rows, "init", "", false, session.getContext()});
 	}
 	
+	@SuppressWarnings("unchecked")
+  public HashMap<String, Object> Load(String objectName, String[] fieldList, Object [][] rows) throws XmlRpcException {
+	  Object o = session.executeCommand(objectName, "load", new Object[] {fieldList, rows});
+    return (HashMap<String, Object>) o;
+  }
+  
 	/**
 	 * Returns the name_get result of an object in the OpenERP server.
 	 * @param objectName Object name to invoke the name_get on

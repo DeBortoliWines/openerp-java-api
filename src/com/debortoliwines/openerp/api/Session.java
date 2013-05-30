@@ -198,6 +198,15 @@ public class Session {
 	}
 	
 	/**
+	 * Returns the OpenERP server version for this session
+	 * @return
+	 * @throws XmlRpcException
+	 */
+	public Version getServerVersion() throws XmlRpcException{
+	  return OpenERPXmlRpcProxy.getServerVersion(host, port);
+	}
+	
+	/**
 	 * Retrieves the context object for the session to set properties on 
 	 * @return
 	 */

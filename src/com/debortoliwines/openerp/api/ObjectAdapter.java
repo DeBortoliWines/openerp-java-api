@@ -39,6 +39,7 @@ public class ObjectAdapter {
 	private final String objectName;
 	private final OpenERPCommand commands;
 	private final FieldCollection allFields;
+	private final Version server_version;
 	
 	// Object name cache so the adapter doesn't have to reread model names from the database for every new object.
 	// Bulk loads/reads can become very slow if every adapter requires a call back to the server
@@ -58,6 +59,7 @@ public class ObjectAdapter {
 	public ObjectAdapter(Session session, String objectName) throws XmlRpcException, OpeneERPApiException{
 		this.commands = session.getOpenERPCommand();
 		this.objectName = objectName;
+		this.server_version = session.getServerVersion();
 
 		objectExists(this.commands, this.objectName);
 
@@ -453,32 +455,66 @@ public class ObjectAdapter {
 	}
 	
 	/**
-	 * Calls the import function on the server to bulk create/update records
+	 * Calls the import_data or load function on the server to bulk create/update records.
+	 * 
+	 * The import_data function will be called on OpenERP servers where the version number is < 7.
+	 * The import_data function does not return IDs and therefore IDs will not be set on imported rows.
+	 * 
+	 * The load function will be called for V7 and the IDs will be set on the imported rows.
+	 * The load function was introduced in V7 and the import_data function deprecated.
+	 * 
 	 * @param rows Rows to import.
 	 * @return If the import was successful
 	 * @throws XmlRpcException 
 	 * @throws OpeneERPApiException 
 	 */
-	public boolean importData(RowCollection rows) throws OpeneERPApiException, XmlRpcException {
+	@SuppressWarnings("unchecked")
+  public boolean importData(RowCollection rows) throws OpeneERPApiException, XmlRpcException {
 
-		modelNameCache.clear();
-		String[] targetFieldList = getFieldListForImport(rows.get(0).getFields());
-		
-		Object[][] importRows = new Object[rows.size()][];
-		
-		for (int i = 0; i < rows.size(); i++){
-			Row row = rows.get(i);
-			importRows[i] = fixImportData(row);
-		}
-		
-		Object [] result = commands.importData(objectName, targetFieldList, importRows);
+    modelNameCache.clear();
+    String[] targetFieldList = getFieldListForImport(rows.get(0).getFields());
+    
+    Object[][] importRows = new Object[rows.size()][];
+    
+    for (int i = 0; i < rows.size(); i++){
+      Row row = rows.get(i);
+      importRows[i] = fixImportData(row);
+    }
+    
+    // The load function was introduced in V7 and the import function deprecated
+    if (this.server_version.getMajor() >= 7){
+      HashMap<String, Object> results = commands.Load(objectName, targetFieldList, importRows);
+      
+      // There was an error.  ids is false and not an Object[]
+      if (results.get("ids") instanceof Boolean){
+        StringBuilder errorString = new StringBuilder();
+        Object [] messages = (Object[]) results.get("messages");
+        for (Object mes : messages){
+          HashMap<String, Object> messageHash = (HashMap<String, Object>) mes;
+          errorString.append("Row: " + messageHash.get("record").toString()
+              + " field: " +  messageHash.get("field").toString() 
+              + " ERROR: " + messageHash.get("message").toString() + "\n");
+        }
+        throw new OpeneERPApiException(errorString.toString());
+      }
+      
+      // Should be in the same order as it was passed in
+      Object[] ids = (Object[]) results.get("ids");
+      for (int i = 0; i < rows.size(); i++){
+        Row row = rows.get(i);
+        row.put("id", ids[i]);
+      }
+    }
+    else{ // Use older import rows function
+      Object [] result = commands.importData(objectName, targetFieldList, importRows);
+  
+      // Should return the number of rows committed.  If there was an error, it returns -1
+      if ((Integer) result[0] != importRows.length)
+        throw new OpeneERPApiException(result[2].toString() + "\nRow :" + result[1].toString() + "");
+    }
 
-		// Should return the number of rows committed.  If there was an error, it returns -1
-		if ((Integer) result[0] != importRows.length)
-			throw new OpeneERPApiException(result[2].toString() + "\nRow :" + result[1].toString() + "");
-
-		return true;
-	}
+    return true;
+  }
 	
 	/**
 	 * Gets the number of records that satisfies the filter
