@@ -138,15 +138,42 @@ public class OpenERPXmlRpcProxy extends XmlRpcClient {
     return finalResults;
   }
   
-	/***
-	 * Get a list of databases available on a specific host and port with the http protocol.
-	 * @param host Host name or IP address where the OpenERP server is hosted
-	 * @param port XML-RPC port number to connect to
-	 * @return A list of databases available for the OpenERP instance
-	 * @throws XmlRpcException
-	 */
-	public static ArrayList<String> getDatabaseList (String host, int port) throws XmlRpcException
-	{
-		return getDatabaseList(RPCProtocol.RPC_HTTP, host, port);
-	}
+  /***
+   * Get a list of databases available on a specific host and port with the http protocol.
+   * @param host Host name or IP address where the OpenERP server is hosted
+   * @param port XML-RPC port number to connect to
+   * @return A list of databases available for the OpenERP instance
+   * @throws XmlRpcException
+   */
+  public static ArrayList<String> getDatabaseList (String host, int port) throws XmlRpcException
+  {
+    return getDatabaseList(RPCProtocol.RPC_HTTP, host, port);
+  }
+  
+  /***
+   * Returns the OpenERP server version.  For example 7.0-20130216-002451 or 6.1-1
+   * @param host Host name or IP address where the OpenERP server is hosted
+   * @param port XML-RPC port number to connect to
+   * @return The version number as a String
+   * @throws XmlRpcException
+   */
+  public static String getServerVersion (String host, int port) throws XmlRpcException
+  {
+    return getServerVersion(RPCProtocol.RPC_HTTP, host, port);
+  }
+  
+  /***
+   * Returns the OpenERP server version.  For example 7.0-20130216-002451 or 6.1-1
+   * @param protocol Protocol to use when connecting to the RPC service ex. http/https
+   * @param host Host name or IP address where the OpenERP server is hosted
+   * @param port XML-RPC port number to connect to
+   * @return The version number as a String
+   * @throws XmlRpcException
+   */
+  public static String getServerVersion (RPCProtocol protocol, String host, int port) throws XmlRpcException
+  {
+    OpenERPXmlRpcProxy client = new OpenERPXmlRpcProxy(protocol, host, port, RPCServices.RPC_DATABASE);
+    
+    return client.execute("server_version", new Object[] {}).toString();
+  }
 }
