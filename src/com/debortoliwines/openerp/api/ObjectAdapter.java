@@ -470,6 +470,23 @@ public class ObjectAdapter {
 	 */
 	@SuppressWarnings("unchecked")
   public boolean importData(RowCollection rows) throws OpeneERPApiException, XmlRpcException {
+	  
+	  // Workaround.  OpenERP7 bug where old and new rows can't be sent together using the import_data or load function
+	  if (this.server_version.getMajor() >= 7 && this.server_version.getMinor() == 0){
+	    RowCollection newRows = new RowCollection();
+      RowCollection oldRows = new RowCollection();
+      
+      for (int i = 0; i < rows.size(); i++){
+        if (rows.get(i).getID() == 0)
+          newRows.add(rows.get(i));
+        else oldRows.add(rows.get(i));
+      }
+    
+      // If mixed rows, import old and new rows separately
+      if (newRows.size() != 0 && oldRows.size() != 0){
+        return this.importData(oldRows) && this.importData(newRows);
+     }
+	  }
 
     modelNameCache.clear();
     String[] targetFieldList = getFieldListForImport(rows.get(0).getFields());
@@ -483,6 +500,26 @@ public class ObjectAdapter {
     
     // The load function was introduced in V7 and the import function deprecated
     if (this.server_version.getMajor() >= 7){
+      
+      // Workaround OpenERP V7 bug.  Remove the .id field for new rows.
+      if (this.server_version.getMinor() == 0 && rows.size() > 0 && rows.get(0).getID() == 0){
+        String[] newTargetFieldList = new String[targetFieldList.length - 1];
+        for (int i = 1; i < targetFieldList.length; i++){
+          newTargetFieldList[i - 1] = targetFieldList[i];
+        }
+        targetFieldList = newTargetFieldList;
+        
+        Object[][] newImportRows = new Object[rows.size()][];
+        for (int i = 0; i < importRows.length; i++){
+          Object[] newRow = new Object[importRows[i].length - 1];
+          for (int j = 1; j < importRows[i].length; j++){
+            newRow[j - 1] = importRows[i][j];
+          }
+          newImportRows[i] = newRow;
+        }
+        importRows = newImportRows;
+      }
+      
       HashMap<String, Object> results = commands.Load(objectName, targetFieldList, importRows);
       
       // There was an error.  ids is false and not an Object[]
