@@ -16,11 +16,36 @@ public class Version {
     this.full_version = version;
     int build_separator_idx = version.indexOf("-");
     
-    String major_minor = version.substring(0,build_separator_idx);
-    this.major = Integer.parseInt(major_minor.split("\\.")[0]);
-    this.minor = Integer.parseInt(major_minor.split("\\.")[1]);
+    String major_minor = version;
     
-    this.build = version.substring(build_separator_idx + 1);
+    // If there is a build number
+    if (build_separator_idx >= 0 && version.length() > 1){
+      major_minor = version.substring(0,build_separator_idx);
+      this.build = version.substring(build_separator_idx + 1);
+    }
+    else this.build = "0";
+    
+    String[] major_minor_obj = major_minor.split("\\.");
+    
+    int maj = -1;
+    try{
+      maj = Integer.parseInt(major_minor_obj[0]);
+    }
+    catch(Exception e){
+      maj = -1;
+    }
+    this.major = maj;
+    
+    int min = -1;
+    try{
+      if (major_minor_obj.length > 1)
+        min = Integer.parseInt(major_minor_obj[1]);
+    }
+    catch(Exception e){
+      min = -1;
+    }
+    this.minor = min;
+    
   }
 
   /**
