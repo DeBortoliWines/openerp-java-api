@@ -198,6 +198,22 @@ public class Session {
 	}
 	
 	/**
+	 * Executes a workflow by sending a signal to the workflow engine for a specific object.
+	 * This functions calls the 'exec_workflow' method on the object
+	 * All parameters are prepended by: "databaseName,userID,password"
+	 * @param objectName Object or model name to send the signal for
+	 * @param signal Signal name to send, for example order_confirm
+   * @param objectID Specific object ID to send the signal for
+	 * @throws XmlRpcException
+	 */
+	public void executeWorkflow(final String objectName, final String signal, final int objectID) throws XmlRpcException {
+    Object[] params = new Object[] {databaseName,userID,password,objectName,signal, objectID};
+    
+    OpenERPXmlRpcProxy objectClient = new OpenERPXmlRpcProxy(protocol, host, port, RPCServices.RPC_OBJECT);
+    objectClient.execute("exec_workflow", params);   
+  }
+	
+	/**
 	 * Returns the OpenERP server version for this session
 	 * @return
 	 * @throws XmlRpcException

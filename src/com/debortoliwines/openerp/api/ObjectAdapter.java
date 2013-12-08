@@ -45,6 +45,9 @@ public class ObjectAdapter {
 	// Bulk loads/reads can become very slow if every adapter requires a call back to the server
 	private static ArrayList<String> objectNameCache = new ArrayList<String>();
 	
+  // Object workflow signal cache so the adapter doesn't have to reread signal names from the database for every workflow call.
+  private static ArrayList<String> signalCache = new ArrayList<String>();
+	
 	// Cache used to store the name_get result of an model to cater for many2many relations in the import function
 	// It is cleared every time the import function is called for a specific object
 	private HashMap<String, HashMap<String, String>> modelNameCache = new HashMap<String, HashMap<String, String>>();
@@ -62,8 +65,8 @@ public class ObjectAdapter {
 		this.server_version = session.getServerVersion();
 
 		objectExists(this.commands, this.objectName);
-
-		allFields = getFields();
+		
+		allFields = this.getFields();
 	}
 	
 	/**
@@ -94,6 +97,35 @@ public class ObjectAdapter {
 		if (objectNameCache.indexOf(objectName) < 0)
 			throw new OpeneERPApiException("Could not find model with name '" + objectName + "'");
 	}
+	
+	@SuppressWarnings("unchecked")
+  private synchronized static void signalExists(OpenERPCommand commands, String objectName, String signal) throws OpeneERPApiException{
+    // If you can't find the signal, reload the cache.  Somebody may have added a new module after the cache was created
+    // Ticket #1 from sourceforge
+	  String signalCombo = objectName + "#" + signal;
+    if (signalCache.indexOf(signalCombo) < 0){
+      signalCache.clear();
+      try{
+        Object[] ids = commands.searchObject("workflow.transition", new Object[]{});
+        Object [] result = commands.readObject("workflow.transition", ids, new String[]{"signal","wkf_id"});
+        for (Object row : result){
+          /* Get the parent workflow to work out get the object name */
+          int wkf_id = Integer.parseInt(((Object[]) ((HashMap<String, Object>) row).get("wkf_id"))[0].toString());
+          Object [] workflow = commands.readObject("workflow", new Object[] {wkf_id}, new String[] {"osv"});
+          
+          String obj = ((HashMap<String, Object>) workflow[0]).get("osv").toString();
+          String sig = ((HashMap<String, Object>) row).get("signal").toString();
+          signalCache.add(obj + "#" + sig);
+        }
+      }
+      catch (XmlRpcException e){
+        throw new OpeneERPApiException("Could not validate signal name: ", e);
+      }
+    }
+
+    if (signalCache.indexOf(signalCombo) < 0)
+      throw new OpeneERPApiException("Could not find signal with name '" + signal + "' for object '" + objectName + "'");
+  }
 	
 	/**
 	 * Prepares a ROW object to be used for setting values in import/write methods
@@ -171,7 +203,7 @@ public class ObjectAdapter {
 	 * @throws XmlRpcException
 	 */
 	public FieldCollection getFields() throws XmlRpcException {
-		return getFields(new String[] {});
+		return this.getFields(new String[] {});
 	}
 
 	/***
@@ -793,4 +825,17 @@ public class ObjectAdapter {
 
 		return rows;
 	}
+	
+  /**
+   * Executes a workflow by sending a signal to the workflow engine for a specific object.
+   * @param row Row that represents the object that the signal should be sent for
+   * @param signal Signal name to send
+   * @throws XmlRpcException
+   * @throws OpeneERPApiException
+   */
+  public void executeWorkflow(Row row, String signal) throws XmlRpcException, OpeneERPApiException{
+    ObjectAdapter.signalExists(this.commands, this.objectName, signal);
+    
+    commands.executeWorkflow(this.objectName, signal, row.getID());
+  }
 }
