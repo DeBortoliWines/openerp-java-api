@@ -6,7 +6,7 @@
 	<property name="dist" value="dist"/>
 	<property name="ui"   value="ui"/>
 	<property name="libext" value="libext"/>
-	<property name="version" value="1.3.0" />
+	<property name="version" value="1.4.0" />
 
 	<target name="init">
 		<!-- Create the build directory structure used by compile -->
