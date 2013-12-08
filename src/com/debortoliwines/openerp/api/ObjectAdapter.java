@@ -838,4 +838,32 @@ public class ObjectAdapter {
     
     commands.executeWorkflow(this.objectName, signal, row.getID());
   }
+  
+  /**
+   * Deletes objects from the OpenERP Server
+   * @param rows Rows to delete
+   * @return If all rows were successfully deleted
+   * @throws XmlRpcException
+   */
+  public boolean unlinkObject(RowCollection rows) throws XmlRpcException{
+    
+    Object [] ids = new Object[rows.size()];
+    for(int i = 0; i< rows.size(); i++){
+      ids[i] = rows.get(i).getID();
+    }
+    
+    return this.commands.unlinkObject(this.objectName, ids);
+  }
+
+  /**
+   * Deletes objects from the OpenERP Server
+   * @param row Row to delete
+   * @return If the row was successfully deleted
+   * @throws XmlRpcException
+   */
+  public boolean unlinkObject(Row row) throws XmlRpcException{
+    RowCollection rows = new RowCollection();
+    rows.add(row);
+    return this.unlinkObject(rows);
+  }
 }
