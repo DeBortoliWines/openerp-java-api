@@ -19,6 +19,7 @@
 
 package com.debortoliwines.openerp.api;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -322,6 +323,12 @@ public class ObjectAdapter {
 			}
 			else if (fld != null && fld.getType() == FieldType.FLOAT && !(value instanceof Double) )
 				value = Double.parseDouble(value.toString());
+			else if (fld != null && fld.getType() == FieldType.DATE && value instanceof Date){
+			  value = new SimpleDateFormat("yyyy-MM-dd").format((Date) value);
+			}
+      else if (fld != null && fld.getType() == FieldType.DATETIME && value instanceof Date){
+        value = new SimpleDateFormat("yyyy-MM-dd HH:mm").format((Date) value);
+      }
 			else if (comparison.equals("=")){
 
 			  // If a integer field is not an integer in a '=' comparison, parse it as an int
