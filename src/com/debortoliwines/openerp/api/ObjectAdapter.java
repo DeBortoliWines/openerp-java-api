@@ -661,6 +661,12 @@ public class ObjectAdapter {
 			// To make sure 1.0 is converted to 1
 			value = Double.valueOf(value.toString()).intValue();
 			break;
+		case DATE:
+			value = new SimpleDateFormat("yyyy-MM-dd").format(value);
+			break;
+		case DATETIME:
+			value = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(value);
+			break;
 		default:
 			value = value.toString();
 			break;
