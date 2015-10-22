@@ -20,9 +20,8 @@
 package com.debortoliwines.openerp.api;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.xmlrpc.XmlRpcException;
 
@@ -44,14 +43,14 @@ public class ObjectAdapter {
 	
 	// Object name cache so the adapter doesn't have to reread model names from the database for every new object.
 	// Bulk loads/reads can become very slow if every adapter requires a call back to the server
-	private static ArrayList<String> objectNameCache = new ArrayList<String>();
+	private static final List<String> objectNameCache = new ArrayList<String>();
 	
-  // Object workflow signal cache so the adapter doesn't have to reread signal names from the database for every workflow call.
-  private static ArrayList<String> signalCache = new ArrayList<String>();
+    // Object workflow signal cache so the adapter doesn't have to reread signal names from the database for every workflow call.
+    private static final List<String> signalCache = new ArrayList<String>();
 	
 	// Cache used to store the name_get result of an model to cater for many2many relations in the import function
 	// It is cleared every time the import function is called for a specific object
-	private HashMap<String, HashMap<String, String>> modelNameCache = new HashMap<String, HashMap<String, String>>();
+	private final Map<String, Map<String, String>> modelNameCache = new ConcurrentHashMap<String, Map<String, String>>();
 
 	/**
 	 * Default constructor
@@ -103,7 +102,7 @@ public class ObjectAdapter {
   private synchronized static void signalExists(OpenERPCommand commands, String objectName, String signal) throws OpeneERPApiException{
     // If you can't find the signal, reload the cache.  Somebody may have added a new module after the cache was created
     // Ticket #1 from sourceforge
-	  String signalCombo = objectName + "#" + signal;
+	String signalCombo = objectName + "#" + signal;
     if (signalCache.indexOf(signalCombo) < 0){
       signalCache.clear();
       try{
@@ -435,7 +434,7 @@ public class ObjectAdapter {
 				/* The import function uses the Names of the objects for the import.  Replace the ID list passed
 				 * in with a Name list for the import_data function that we are about to call
 				 */
-				HashMap<String, String> idToName = null;
+				Map<String, String> idToName = null;
 				if (!modelNameCache.containsKey(fld.getRelation())){
 					idToName = new HashMap<String, String>();
 					Object [] ids = commands.searchObject(fld.getRelation(), new Object[]{});
@@ -479,7 +478,7 @@ public class ObjectAdapter {
 	
 	private String[] getFieldListForImport(FieldCollection currentFields) {
 
-		ArrayList<String> fieldList = new ArrayList<String>();
+		ArrayList<String> fieldList = new ArrayList<String>(currentFields.size());
 		fieldList.add(".id");
 
 		for (Field field : currentFields){

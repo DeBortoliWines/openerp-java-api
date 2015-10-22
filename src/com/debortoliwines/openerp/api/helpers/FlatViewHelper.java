@@ -112,7 +112,7 @@ public class FlatViewHelper {
 	 */
 	public static String[] getFieldNames(String objectName, FieldCollection fields) throws XmlRpcException {
 		
-		ArrayList<String> fieldNames = new ArrayList<String>();
+		ArrayList<String> fieldNames = new ArrayList<String>(fields.size());
 		
 		for (FlatViewField fld : getFields(objectName, fields)){
 			fieldNames.add(fld.getName());
@@ -128,7 +128,7 @@ public class FlatViewHelper {
 	 * @return Original list of fields that the flattened out collection was built on
 	 */
 	public static String[] getOriginalFieldNames(String objectName, FlatViewFieldCollection fields){
-		ArrayList<String> fieldNames = new ArrayList<String>();
+		ArrayList<String> fieldNames = new ArrayList<String>(fields.size());
 		
 		for (FlatViewField fld : fields){
 			if (fieldNames.indexOf(fld.getSourceField().getName()) < 0){
