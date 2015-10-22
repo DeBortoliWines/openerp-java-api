@@ -103,7 +103,7 @@ public class Session {
 	    // Only provides additional information in any case.
   		ArrayList<String> dbList = OpenERPXmlRpcProxy.getDatabaseList(protocol,host,port);
   		if (dbList.indexOf(databaseName) < 0){
-  			StringBuffer dbListBuff = new StringBuffer();
+  			StringBuilder dbListBuff = new StringBuilder();
   			for (String dbName : dbList)
   				dbListBuff.append(dbName + System.getProperty("line.separator"));
   
