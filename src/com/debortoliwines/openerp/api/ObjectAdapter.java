@@ -23,6 +23,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.TimeZone;
 
 import org.apache.xmlrpc.XmlRpcException;
 
@@ -662,10 +663,18 @@ public class ObjectAdapter {
 			value = Double.valueOf(value.toString()).intValue();
 			break;
 		case DATE:
-			value = new SimpleDateFormat("yyyy-MM-dd").format(value);
+            {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                value = sdf.format(value);
+            }
 			break;
 		case DATETIME:
-			value = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(value);
+            {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                value = sdf.format(value);
+            }
 			break;
 		default:
 			value = value.toString();
