@@ -567,9 +567,11 @@ public class ObjectAdapter {
         Object [] messages = (Object[]) results.get("messages");
         for (Object mes : messages){
           HashMap<String, Object> messageHash = (HashMap<String, Object>) mes;
-          errorString.append("Row: " + messageHash.get("record").toString()
-              + " field: " +  messageHash.get("field").toString() 
-              + " ERROR: " + messageHash.get("message").toString() + "\n");
+          for (String fieldName : messageHash.keySet())
+          {
+            errorString.append(fieldName).append(":").append(messageHash.get(fieldName));
+          }
+          errorString.append('\n');
         }
         throw new OpeneERPApiException(errorString.toString());
       }
