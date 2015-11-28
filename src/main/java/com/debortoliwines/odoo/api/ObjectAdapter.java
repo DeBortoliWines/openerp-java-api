@@ -21,12 +21,14 @@ package com.debortoliwines.odoo.api;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.xmlrpc.XmlRpcException;
@@ -646,17 +648,14 @@ public class ObjectAdapter {
 
 		HashMap<String, Object> results = command.Load(modelName, targetFieldList, importRows);
 
-		// There was an error. ids is false and not an Object[]
 		if (results.get("ids") instanceof Boolean) {
-			StringBuilder errorString = new StringBuilder();
-			Object[] messages = (Object[]) results.get("messages");
-			for (Object mes : messages) {
-				HashMap<String, Object> messageHash = (HashMap<String, Object>) mes;
-				errorString.append("Row: " + messageHash.get("record").toString() + " field: "
-						+ messageHash.get("field").toString() + " ERROR: " + messageHash.get("message").toString()
-						+ "\n");
-			}
-			throw new OpeneERPApiException(errorString.toString());
+			// There was an error. ids is false and not an Object[]
+			Map<String, Object>[] messages = (Map<String, Object>[]) results.get("messages");
+			String errorString = Arrays.stream(messages)
+					.flatMap(m -> m.entrySet().stream())
+					.map(e -> String.join(":", e.getKey(), e.getValue().toString()))
+					.collect(Collectors.joining("\n"));
+			throw new OpeneERPApiException(errorString);
 		}
 
 		// Should be in the same order as it was passed in
