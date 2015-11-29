@@ -23,6 +23,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.TimeZone;
 
 import org.apache.xmlrpc.XmlRpcException;
 
@@ -567,9 +568,11 @@ public class ObjectAdapter {
         Object [] messages = (Object[]) results.get("messages");
         for (Object mes : messages){
           HashMap<String, Object> messageHash = (HashMap<String, Object>) mes;
-          errorString.append("Row: " + messageHash.get("record").toString()
-              + " field: " +  messageHash.get("field").toString() 
-              + " ERROR: " + messageHash.get("message").toString() + "\n");
+          for (String fieldName : messageHash.keySet())
+          {
+            errorString.append(fieldName).append(":").append(messageHash.get(fieldName));
+          }
+          errorString.append('\n');
         }
         throw new OpeneERPApiException(errorString.toString());
       }
@@ -660,6 +663,20 @@ public class ObjectAdapter {
 		case INTEGER:
 			// To make sure 1.0 is converted to 1
 			value = Double.valueOf(value.toString()).intValue();
+			break;
+		case DATE:
+            {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                value = sdf.format(value);
+            }
+			break;
+		case DATETIME:
+            {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                value = sdf.format(value);
+            }
 			break;
 		default:
 			value = value.toString();
