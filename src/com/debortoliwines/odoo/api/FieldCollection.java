@@ -17,38 +17,35 @@
  *
  */
 
-package com.debortoliwines.openerp.api;
+package com.debortoliwines.odoo.api;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.Comparator;
 
 /***
- * Row collection for OpenERP row data
+ * Array of Field objects.
  * @author Pieter van der Merwe
  *
  */
-public class RowCollection extends ArrayList<Row> {
+public class FieldCollection extends ArrayList<Field> {
 
-	private static final long serialVersionUID = -168965138153400087L;
+	private static final long serialVersionUID = 470551054665276346L;
 	
-	public RowCollection(){
+	/**
+	 * Sorts the field entries in this field collection by Name
+	 */
+	public void SortByName(){
+	  Collections.sort(this,new FieldByNameComparator());
 	}
+	
+	private class FieldByNameComparator implements Comparator<Field> { 
 
-	@SuppressWarnings("unchecked")
-	public RowCollection(Object [] openERPResultSet, FieldCollection fields) throws OpeneERPApiException{
-		for (int i = 0; i < openERPResultSet.length; i++){
-			Row row = new Row((HashMap<String, Object>) openERPResultSet[i], fields);
-			this.add(row);
-		}
+	  @Override
+	  public int compare(Field arg0, Field arg1) {
+	    return arg0.getName().compareTo(arg1.getName());
+	  }
+	  
 	}
-
-	@Override
-	public void add(int index, Row element) {
-		super.add(index, element);
-	}
-
-	@Override
-	public boolean add(Row e) {
-		return super.add(e);
-	}
+	
 }

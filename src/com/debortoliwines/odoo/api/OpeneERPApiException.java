@@ -17,24 +17,30 @@
  *
  */
 
-package com.debortoliwines.openerp.api;
+package com.debortoliwines.odoo.api;
 
 /**
- * Holds selection options for Field(s) in a FieldCollection if the field is a selection field.
+ * Exception class for OpenERP API errors
  * @author Pieter van der Merwe
  *
  */
-public class SelectionOption {
-	public final String code;
-	public final String value;
-	
-	/**
-	 * Default constructor
-	 * @param code
-	 * @param value
-	 */
-	public SelectionOption(final String code, final String value){
-		this.code = code;
-		this.value = value;
+public class OpeneERPApiException extends Exception {
+
+	private static final long serialVersionUID = 3148147969903379455L;
+
+	public OpeneERPApiException(String message) {
+		super(message);
+		// TODO Auto-generated constructor stub
 	}
+
+	public OpeneERPApiException(Throwable cause) {
+		super(cause);
+		// TODO Auto-generated constructor stub
+	}
+
+	public OpeneERPApiException(String message, Throwable cause) {
+		super(message, cause);
+		// TODO Auto-generated constructor stub
+	}
+
 }

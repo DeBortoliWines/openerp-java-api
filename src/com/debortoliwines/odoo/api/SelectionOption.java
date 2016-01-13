@@ -17,35 +17,24 @@
  *
  */
 
-package com.debortoliwines.openerp.api;
+package com.debortoliwines.odoo.api;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-
-/***
- * Array of Field objects.
+/**
+ * Holds selection options for Field(s) in a FieldCollection if the field is a selection field.
  * @author Pieter van der Merwe
  *
  */
-public class FieldCollection extends ArrayList<Field> {
-
-	private static final long serialVersionUID = 470551054665276346L;
+public class SelectionOption {
+	public final String code;
+	public final String value;
 	
 	/**
-	 * Sorts the field entries in this field collection by Name
+	 * Default constructor
+	 * @param code
+	 * @param value
 	 */
-	public void SortByName(){
-	  Collections.sort(this,new FieldByNameComparator());
+	public SelectionOption(final String code, final String value){
+		this.code = code;
+		this.value = value;
 	}
-	
-	private class FieldByNameComparator implements Comparator<Field> { 
-
-	  @Override
-	  public int compare(Field arg0, Field arg1) {
-	    return arg0.getName().compareTo(arg1.getName());
-	  }
-	  
-	}
-	
 }

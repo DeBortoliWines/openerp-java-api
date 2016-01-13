@@ -17,7 +17,7 @@
  *
  */
 
-package com.debortoliwines.openerp.api;
+package com.debortoliwines.odoo.api;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -26,9 +26,9 @@ import java.util.HashMap;
 
 import org.apache.xmlrpc.XmlRpcException;
 
-import com.debortoliwines.openerp.api.Field.FieldType;
-import com.debortoliwines.openerp.api.FilterCollection.FilterOperator;
-import com.debortoliwines.openerp.api.helpers.FilterHelper;
+import com.debortoliwines.odoo.api.Field.FieldType;
+import com.debortoliwines.odoo.api.FilterCollection.FilterOperator;
+import com.debortoliwines.odoo.api.helpers.FilterHelper;
 
 /**
  * Main class for communicating with the server.  It provides extra validation for making calls to the OpenERP server.  It converts data types, validates model names, validates filters, checks for nulls etc.

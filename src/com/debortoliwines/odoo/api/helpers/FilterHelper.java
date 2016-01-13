@@ -17,7 +17,7 @@
  *
  */
 
-package com.debortoliwines.openerp.api.helpers;
+package com.debortoliwines.odoo.api.helpers;
 
 /**
  * Filter helper to assist is common tasks and store some hardcoded values
