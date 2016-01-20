@@ -7,3 +7,7 @@
 .project
 .classpath
 .settings/
+
+# properties file holding connection data for integration test
+demodb.properties
+

@@ -30,9 +30,9 @@ import java.util.Map;
 public class Context extends HashMap<String, Object>{
 
 	private static final long serialVersionUID = 1L;
-	final String ActiveTestTag = "active_test";
-	final String LangTag = "lang";
-	final String TimezoneTag = "tz";
+	final static String ActiveTestTag = "active_test";
+	final static String LangTag = "lang";
+	final static String TimezoneTag = "tz";
 	
 
 	@Override
