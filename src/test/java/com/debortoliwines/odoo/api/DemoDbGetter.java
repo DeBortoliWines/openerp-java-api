@@ -128,12 +128,10 @@ public class DemoDbGetter {
 			common_config.setServerURL(
 					new URL(String.format("%s%s:%s/xmlrpc/2/common", protocolAsString, infos.host, infos.port)));
 
-			@SuppressWarnings("unchecked")
-			final Map<String, String> version = (Map<String, String>) client.execute(common_config, "version",
-					new Object[] {});
-
-			// Look for server_version info in response
-			return version.containsKey("server_version");
+			int uid = (int) client.execute(common_config, "authenticate",
+					new Object[] { infos.db, infos.username, infos.password, new Object[] {} });
+			// Informations are valid if user could log in.
+			return uid != 0;
 
 		} catch (MalformedURLException e1) {
 			// Previously saved data is causing this...
