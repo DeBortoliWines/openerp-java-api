@@ -100,14 +100,11 @@ public class Session {
 
 	  checkDatabasePresence();
 
-		// Connect
-		OpenERPXmlRpcProxy commonClient = new OpenERPXmlRpcProxy(protocol, host, port, RPCServices.RPC_COMMON);
-		
 		// Synchronize all threads to login.  If you login with the same user at the same time you get concurrency
 		// errors in the OpenERP server (for example by running a multi threaded ETL process like Kettle).
 		Session.startConnecting();
 		
-		authenticate(commonClient);
+		authenticate();
 		
     this.context.clear();
     @SuppressWarnings("unchecked")
@@ -119,7 +116,9 @@ public class Session {
 
 	}
 
-	int authenticate(OpenERPXmlRpcProxy commonClient) throws XmlRpcException, Exception {
+	int authenticate() throws XmlRpcException, Exception {
+		OpenERPXmlRpcProxy commonClient = new OpenERPXmlRpcProxy(protocol, host, port, RPCServices.RPC_COMMON);
+
 		Object id = null;
 		try{
 			id = commonClient.execute("login", new Object[] { databaseName, userName, password });
@@ -144,6 +143,7 @@ public class Session {
 
 	private void checkDatabasePresence() {
 		try{
+
 		    // 21/07/2012 - Database listing may not be enabled (--no-database-list or list_db=false).
 		    // Only provides additional information in any case.
 			ArrayList<String> dbList = getDatabaseList(host,port);
@@ -158,7 +158,7 @@ public class Session {
 			}
 		  }
 		  catch(Exception e){
-		    
+			// e.printStackTrace();
 		  }
 	}
 	

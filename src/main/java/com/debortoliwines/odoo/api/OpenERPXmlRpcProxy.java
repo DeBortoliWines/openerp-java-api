@@ -52,9 +52,9 @@ public class OpenERPXmlRpcProxy extends XmlRpcClient {
     RPC_HTTPS
   }
 	
-	private final String RPC_COMMON_URL = "/xmlrpc/common";
-	private final String RPC_OBJECT_URL = "/xmlrpc/object";
-	private final String RPC_DATABASE_URL = "/xmlrpc/db";
+	private final String RPC_COMMON_URL = "/xmlrpc/2/common";
+	private final String RPC_OBJECT_URL = "/xmlrpc/2/object";
+	private final String RPC_DATABASE_URL = "/xmlrpc/2/db";
 	
 	/**
 	 * Proxy object to handle calls to and from the OpenERP server
