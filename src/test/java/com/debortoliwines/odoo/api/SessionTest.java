@@ -2,31 +2,34 @@ package com.debortoliwines.odoo.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.HttpResponse.response;
 
 import java.io.IOException;
 import java.util.ArrayList;
 
+import javax.net.ssl.HttpsURLConnection;
+
 import org.apache.xmlrpc.XmlRpcException;
 import org.assertj.core.api.SoftAssertions;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.RegexBody;
+import org.mockserver.model.StringBody;
+import org.mockserver.socket.PortFactory;
+import org.mockserver.socket.SSLFactory;
+import org.mockserver.verify.VerificationTimes;
 
-import com.debortoliwines.odoo.api.DemoDbGetter.DemoDbInfoRequester;
 import com.debortoliwines.odoo.api.OpenERPXmlRpcProxy.RPCProtocol;
 
 public class SessionTest {
+	private static final int MOCKSERVER_PORT = PortFactory.findFreePort();
 	private static final String WRONG_DB = "wrong_db";
 	private static final String WRONG_DB_MESSAGE_REGEXP = "[\\w\\W]*[Dd]atabase \"?" + WRONG_DB
-			+ "\"? does not exist[\\w\\W]*";// ".*[Dd]atabase
-																														// \"?"
-																														// +
-																														// WRONG_DB
-																														// +
-																														// "\"?
-																														// does
-																														// not
-																														// exist";
+			+ "\"? does not exist[\\w\\W]*";
 	private static final String LOGIN_FAILED_MESSAGE = "Incorrect username and/or password.  Login Failed.";
 	private static final String WRONG_PASSWORD = "wrong_password";
 	private static final String WRONG_USERNAME = "wrong_userName";
@@ -39,18 +42,108 @@ public class SessionTest {
 
 	private Session session;
 
+	// private static ClientAndProxy proxy;
+	private static ClientAndServer mockServer;
+
+	@BeforeClass
+	public static void startProxyAndServer() throws Exception {
+		HttpsURLConnection.setDefaultSSLSocketFactory(SSLFactory.getInstance().sslContext().getSocketFactory());
+		// proxy =
+		// ClientAndProxy.startClientAndProxy(PortFactory.findFreePort());
+		mockServer = ClientAndServer.startClientAndServer(MOCKSERVER_PORT);
+		mockDeniedDatabaseListing();
+		mockValidLogin();
+		mockGetContext();
+		mockLoginWrongUsername();
+		mockLoginWrongPassword();
+		mockLoginWrongDb();
+		mockServerVersionResponse();
+	}
+
+	private static void mockDeniedDatabaseListing() {
+		mockServer
+				.when(request().withMethod("POST").withPath("/xmlrpc/2/db")
+						.withBody(new StringBody(
+								"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>list</methodName><params/></methodCall>")))
+				.respond(response().withStatusCode(200).withBody(
+						"<?xml version='1.0'?>\n<methodResponse>\n<fault>\n<value><struct>\n<member>\n<name>faultCode</name>\n<value><int>3</int></value>\n</member>\n<member>\n<name>faultString</name>\n<value><string>Access denied</string></value>\n</member>\n</struct></value>\n</fault>\n</methodResponse>\n"));
+	}
+
+	private static void mockValidLogin() {
+		mockServer
+				.when(request().withMethod("POST").withPath("/xmlrpc/2/common")
+						.withBody(new StringBody(
+								"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>login</methodName><params><param><value>demo_90_1453880126</value></param><param><value>admin</value></param><param><value>admin</value></param></params></methodCall>")))
+				.respond(response().withStatusCode(200).withBody(
+						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><int>1</int></value>\n</param>\n</params>\n</methodResponse>\n"));
+	}
+
+	private static void mockGetContext() {
+		mockServer
+				.when(request().withMethod("POST").withPath("/xmlrpc/2/object")
+						.withBody(new StringBody(
+								"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>execute</methodName><params><param><value>demo_90_1453880126</value></param><param><value><i4>1</i4></value></param><param><value>admin</value></param><param><value>res.users</value></param><param><value>context_get</value></param></params></methodCall>")))
+				.respond(response().withStatusCode(200).withBody(
+						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><struct>\n<member>\n<name>lang</name>\n<value><string>en_US</string></value>\n</member>\n<member>\n<name>tz</name>\n<value><string>Europe/Brussels</string></value>\n</member>\n</struct></value>\n</param>\n</params>\n</methodResponse>\n"));
+	}
+
+	private static void mockLoginWrongUsername() {
+		mockServer
+				.when(request().withMethod("POST").withPath("/xmlrpc/2/common")
+						.withBody(new StringBody(
+								"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>login</methodName><params><param><value>demo_90_1453880126</value></param><param><value>wrong_userName</value></param><param><value>admin</value></param></params></methodCall>")))
+				.respond(response().withStatusCode(200).withBody(
+						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><boolean>0</boolean></value>\n</param>\n</params>\n</methodResponse>\n"));
+	}
+
+	private static void mockLoginWrongPassword() {
+		mockServer
+				.when(request().withMethod("POST").withPath("/xmlrpc/2/common")
+						.withBody(new StringBody(
+								"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>login</methodName><params><param><value>demo_90_1453880126</value></param><param><value>admin</value></param><param><value>wrong_password</value></param></params></methodCall>")))
+				.respond(response().withStatusCode(200).withBody(
+						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><boolean>0</boolean></value>\n</param>\n</params>\n</methodResponse>\n"));
+	}
+
+	private static void mockLoginWrongDb() {
+		mockServer
+				.when(request().withMethod("POST").withPath("/xmlrpc/2/common")
+						.withBody(new StringBody(
+								"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>login</methodName><params><param><value>wrong_db</value></param><param><value>admin</value></param><param><value>admin</value></param></params></methodCall>")))
+				.respond(response().withStatusCode(200).withBody(
+						"<?xml version='1.0'?>\n<methodResponse>\n<fault>\n<value><struct>\n<member>\n<name>faultCode</name>\n<value><int>1</int></value>\n</member>\n<member>\n<name>faultString</name>\n<value><string>Traceback (most recent call last):\n  File \"/home/odoo/src/odoo/9.0/openerp/service/wsgi_server.py\", line 56, in xmlrpc_return\n    result = openerp.http.dispatch_rpc(service, method, params)\n  File \"/home/odoo/src/odoo/9.0/openerp/http.py\", line 114, in dispatch_rpc\n    result = dispatch(method, params)\n  File \"/home/odoo/src/odoo/9.0/openerp/service/common.py\", line 57, in dispatch\n    return g[exp_method_name](*params)\n  File \"/home/odoo/src/odoo/9.0/openerp/service/common.py\", line 23, in exp_login\n    res = security.login(db, login, password)\n  File \"/home/odoo/src/odoo/9.0/openerp/service/security.py\", line 8, in login\n    res_users = openerp.registry(db)['res.users']\n  File \"/home/odoo/src/odoo/9.0/openerp/__init__.py\", line 50, in registry\n    return modules.registry.RegistryManager.get(database_name)\n  File \"/home/odoo/src/odoo/9.0/openerp/modules/registry.py\", line 354, in get\n    update_module)\n  File \"/home/odoo/src/odoo/9.0/openerp/modules/registry.py\", line 371, in new\n    registry = Registry(db_name)\n  File \"/home/odoo/src/odoo/9.0/openerp/modules/registry.py\", line 63, in __init__\n    cr = self.cursor()\n  File \"/home/odoo/src/odoo/9.0/openerp/modules/registry.py\", line 278, in cursor\n    return self._db.cursor()\n  File \"/home/odoo/src/odoo/9.0/openerp/sql_db.py\", line 556, in cursor\n    return Cursor(self.__pool, self.dbname, self.dsn, serialized=serialized)\n  File \"/home/odoo/src/odoo/9.0/openerp/sql_db.py\", line 162, in __init__\n    self._cnx = pool.borrow(dsn)\n  File \"/home/odoo/src/odoo/9.0/openerp/sql_db.py\", line 445, in _locked\n    return fun(self, *args, **kwargs)\n  File \"/home/odoo/src/odoo/9.0/openerp/sql_db.py\", line 507, in borrow\n    result = psycopg2.connect(dsn=dsn, connection_factory=PsycoConnection)\n  File \"/usr/lib/python2.7/dist-packages/psycopg2/__init__.py\", line 179, in connect\n    connection_factory=connection_factory, async=async)\nOperationalError: FATAL:  database \"wrong_db\" does not exist\n\n</string></value>\n</member>\n</struct></value>\n</fault>\n</methodResponse>\n"));
+	}
+
+	private static void mockServerVersionResponse() {
+		mockServer
+				.when(request().withMethod("POST").withPath("/xmlrpc/2/db")
+						.withBody(new StringBody(
+								"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>server_version</methodName><params/></methodCall>")))
+				.respond(response().withStatusCode(200).withBody(
+						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><string>9.0e</string></value>\n</param>\n</params>\n</methodResponse>\n"));
+	}
+
+	@AfterClass
+	public static void stopServerAndProxy() {
+		mockServer.stop();
+		// proxy.dumpToLogAsJava();
+		// proxy.stop();
+	}
+
 	/*
 	 * Initialize connection data to demo db only once per test series
-	 * 
-	 * Tries to re-use previous connection data first.
-	 * 
-	 * @throws IOException
-	 * 
-	 * @throws XmlRpcException
 	 */
 	@BeforeClass
 	public static void requestDemoDb() throws IOException, XmlRpcException {
-		DemoDbGetter.getDemoDb(new DemoDbConnectionDataSetter());
+		// DemoDbGetter.getDemoDb(new DemoDbConnectionDataSetter());
+
+		SessionTest.protocol = RPCProtocol.RPC_HTTPS;
+		SessionTest.host = "localhost";
+		SessionTest.port = MOCKSERVER_PORT;
+		SessionTest.userName = "admin";
+		SessionTest.password = "admin";
+		SessionTest.databaseName = "demo_90_1453880126";
+
 	}
 
 	@Before
@@ -72,26 +165,23 @@ public class SessionTest {
 		Session badSession4 = new Session(RPCProtocol.RPC_HTTPS, host, 1234, databaseName, userName, password);
 		Throwable thrown4 = catchThrowable(() -> badSession4.startSession());
 
-		Session badSession5 = new Session(RPCProtocol.RPC_HTTPS, "localhost", port, databaseName, userName,
-				password);
-		Throwable thrown5 = catchThrowable(() -> badSession5.startSession());
-
 		// use SoftAssertions instead of direct assertThat methods
 		// to collect all failing assertions in one go
 		SoftAssertions softly = new SoftAssertions();
 		softly.assertThat(thrown).as("Bad userName").isInstanceOf(Exception.class).hasMessage(LOGIN_FAILED_MESSAGE);
 		softly.assertThat(thrown2).as("Bad password").isInstanceOf(Exception.class).hasMessage(LOGIN_FAILED_MESSAGE);
-		softly.assertThat(thrown3).as("Bad db").isInstanceOf(Exception.class)
+		softly.assertThat(thrown3).as("Bad db").isInstanceOf(XmlRpcException.class)
 				.hasMessageMatching(WRONG_DB_MESSAGE_REGEXP);
 		softly.assertThat(thrown4).as("Bad port").isInstanceOf(XmlRpcException.class);
-		softly.assertThat(thrown5).as("Bad host").isInstanceOf(XmlRpcException.class);
 		// Don't forget to call SoftAssertions global verification !
 		softly.assertAll();
 	}
 
 	@Test
 	public void should_contain_tags_in_context_after_start() throws Exception {
-		session.startSession();
+		// Need to be authenticated to be allowed to fetch the remote context
+		session.authenticate();
+		session.getRemoteContext();
 		assertThat(session.getContext()).as("Session context").containsEntry(Context.ActiveTestTag, true)
 				.containsKeys(Context.LangTag, Context.TimezoneTag);
 	}
@@ -110,10 +200,6 @@ public class SessionTest {
 		try {
 			ArrayList<String> databaseList = session.getDatabaseList(host, port);
 			assertThat(databaseList).as("List of databases on server " + host).contains(databaseName);
-		} catch (ClassCastException e) {
-			assertThat(e)
-					.as("ClassCastException thrown by XmlRpc when trying to read faultCode and Odoo returned a message")
-					.hasMessage("java.lang.String cannot be cast to java.lang.Integer");
 		} catch (XmlRpcException e) {
 			assertThat(e).as("XmlRpcException thrown when access is denied").hasMessage("Access denied");
 		}
@@ -123,41 +209,86 @@ public class SessionTest {
 	public void shoudl_return_server_version() throws Exception {
 		Version version = session.getServerVersion();
 		assertThat(version).as("Server version").isNotNull();
-		assertThat(version.getMajor()).isGreaterThanOrEqualTo(8);
+
 	}
 
-	/**
-	 * Only used to set the static data for connection on the main class
-	 */
-	private static class DemoDbConnectionDataSetter implements DemoDbInfoRequester {
-		@Override
-		public void setProtocol(RPCProtocol protocol) {
-			SessionTest.protocol = protocol;
-		}
+	static boolean checkedDatabasePresence = false, authenticated = false, fetchedRemoteContext = false;
 
-		@Override
-		public void setHost(String host) {
-			SessionTest.host = host;
-		}
+	@Test
+	public void should_authenticate_and_fetch_remote_context_on_session_start() throws Exception {
+		session = new Session(protocol, host, port, databaseName, userName, password) {
+			@Override
+			int authenticate() throws XmlRpcException, Exception {
+				authenticated = true;
+				return 1;
+			}
 
-		@Override
-		public void setPort(Integer port) {
-			SessionTest.port = port;
-		}
+			@Override
+			void checkDatabasePresence() {
+				checkedDatabasePresence = true;
+			}
 
-		@Override
-		public void setDatabaseName(String databaseName) {
-			SessionTest.databaseName = databaseName;
-		}
-
-		@Override
-		public void setUserName(String userName) {
-			SessionTest.userName = userName;
-		}
-
-		@Override
-		public void setPassword(String password) {
-			SessionTest.password = password;
-		}
+			@Override
+			void getRemoteContext() throws XmlRpcException {
+				fetchedRemoteContext = true;
+			}
+		};
+		session.startSession();
+		// use SoftAssertions instead of direct assertThat methods
+		// to collect all failing assertions in one go
+		SoftAssertions softly = new SoftAssertions();
+		softly.assertThat(checkedDatabasePresence).as("Checked for database presence").isTrue();
+		softly.assertThat(authenticated).as("Authenticated").isTrue();
+		softly.assertThat(fetchedRemoteContext).as("Fetched remote context").isTrue();
+		// Don't forget to call SoftAssertions global verification !
+		softly.assertAll();
 	}
+
+	@Test
+	public void should_send_given_parameters() throws Exception {
+		mockServer
+				.when(request().withMethod("POST").withPath("/xmlrpc/2/object")
+						.withBody(new RegexBody(".*parameter1.*parameter2.*")))
+				.respond(response().withStatusCode(200).withBody(
+						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><int>1</int></value>\n</param>\n</params>\n</methodResponse>\n"));
+		Object[] parameters = new Object[] { "parameter1", "parameter2" };
+		session.executeCommand("objectName", "commandName", parameters);
+		mockServer.verify(request().withBody(new RegexBody(".*parameter1.*parameter2.*")), VerificationTimes.once());
+	}
+
+	// /**
+	// * Only used to set the static data for connection on the main class
+	// */
+	// private static class DemoDbConnectionDataSetter implements
+	// DemoDbInfoRequester {
+	// @Override
+	// public void setProtocol(RPCProtocol protocol) {
+	// SessionTest.protocol = protocol;
+	// }
+	//
+	// @Override
+	// public void setHost(String host) {
+	// SessionTest.host = host;
+	// }
+	//
+	// @Override
+	// public void setPort(Integer port) {
+	// SessionTest.port = port;
+	// }
+	//
+	// @Override
+	// public void setDatabaseName(String databaseName) {
+	// SessionTest.databaseName = databaseName;
+	// }
+	//
+	// @Override
+	// public void setUserName(String userName) {
+	// SessionTest.userName = userName;
+	// }
+	//
+	// @Override
+	// public void setPassword(String password) {
+	// SessionTest.password = password;
+	// }
+	// }
 }
