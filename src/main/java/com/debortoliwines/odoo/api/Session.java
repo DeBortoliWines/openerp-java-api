@@ -126,16 +126,7 @@ public class Session {
 	int authenticate() throws XmlRpcException, Exception {
 		OpenERPXmlRpcProxy commonClient = new OpenERPXmlRpcProxy(protocol, host, port, RPCServices.RPC_COMMON);
 
-		Object id = null;
-		try {
-			id = commonClient.execute("login", new Object[] { databaseName, userName, password });
-		} catch (ClassCastException c) {
-			// General exception is only thrown if the database doesn't exist.
-			// Incorrect username and password will return an id of 0.
-			// Incorrect server parameters (servername/port) will not be caught
-			// here
-			throw new Exception("Database " + databaseName + " does not exist");
-		}
+		Object id = commonClient.execute("login", new Object[] { databaseName, userName, password });
 
 		if (id instanceof Integer)
 			userID = (Integer) id;
