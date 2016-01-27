@@ -103,34 +103,38 @@ public class Session {
 		// Synchronize all threads to login.  If you login with the same user at the same time you get concurrency
 		// errors in the OpenERP server (for example by running a multi threaded ETL process like Kettle).
 		Session.startConnecting();
-		
-		authenticate();
-		
-    this.context.clear();
-    @SuppressWarnings("unchecked")
-    HashMap<String, Object> openerpContext = (HashMap<String, Object>) this.executeCommand("res.users","context_get", new Object[]{});
-    this.context.putAll(openerpContext);
-    
-    // Standard behavior is web/gui clients.
-    this.context.setActiveTest(true);
+		try {
+			authenticate();
+		} finally {
+			Session.connecting = false;
+		}
+		getRemoteContext();
 
+	}
+
+	void getRemoteContext() throws XmlRpcException {
+		this.context.clear();
+		@SuppressWarnings("unchecked")
+		HashMap<String, Object> openerpContext = (HashMap<String, Object>) this.executeCommand("res.users",
+				"context_get", new Object[] {});
+		this.context.putAll(openerpContext);
+
+		// Standard behavior is web/gui clients.
+		this.context.setActiveTest(true);
 	}
 
 	int authenticate() throws XmlRpcException, Exception {
 		OpenERPXmlRpcProxy commonClient = new OpenERPXmlRpcProxy(protocol, host, port, RPCServices.RPC_COMMON);
 
 		Object id = null;
-		try{
+		try {
 			id = commonClient.execute("login", new Object[] { databaseName, userName, password });
-		}
-		catch (ClassCastException c){
-		  // General exception is only thrown if the database doesn't exist.
-		  // Incorrect username and password will return an id of 0.  
-		  // Incorrect server parameters (servername/port) will not be caught here  
-		  throw new Exception("Database " + databaseName + " does not exist");
-		}
-		finally{
-			Session.connecting = false;
+		} catch (ClassCastException c) {
+			// General exception is only thrown if the database doesn't exist.
+			// Incorrect username and password will return an id of 0.
+			// Incorrect server parameters (servername/port) will not be caught
+			// here
+			throw new Exception("Database " + databaseName + " does not exist");
 		}
 
 		if (id instanceof Integer)
@@ -141,8 +145,8 @@ public class Session {
 		return userID;
 	}
 
-	private void checkDatabasePresence() {
-		try{
+	void checkDatabasePresence() {
+		try {
 
 		    // 21/07/2012 - Database listing may not be enabled (--no-database-list or list_db=false).
 		    // Only provides additional information in any case.
@@ -166,8 +170,8 @@ public class Session {
 		while (Session.connecting){
 			try {
 				Thread.sleep(100);
+			} catch (Exception e) {
 			}
-			catch (Exception e){}
 		}
 		Session.connecting = true;
 	}

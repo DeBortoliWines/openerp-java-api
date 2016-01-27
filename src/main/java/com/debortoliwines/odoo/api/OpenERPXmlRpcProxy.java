@@ -19,13 +19,17 @@
 
 package com.debortoliwines.odoo.api;
 
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.net.Proxy;
 import java.net.URL;
 import java.util.ArrayList;
 
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
+import org.apache.xmlrpc.client.XmlRpcSun15HttpTransportFactory;
+import org.apache.xmlrpc.client.XmlRpcTransportFactory;
 
 /**
  * An XMLRRPC Client that connects to OpenERP 
@@ -82,15 +86,60 @@ public class OpenERPXmlRpcProxy extends XmlRpcClient {
 		
 		String protocol_str = "";
 		switch (protocol) {
-    case RPC_HTTP:
-      protocol_str = "http";
-      break;
+		case RPC_HTTP:
+			protocol_str = "http";
+			break;
 
-    default:
-      protocol_str = "https";
-      break;
-    }
-		
+		default:
+			protocol_str = "https";
+			break;
+		}
+
+		// If a proxy is defined, use it:
+		XmlRpcTransportFactory factory = this.getTransportFactory();
+		if (factory != null && factory instanceof XmlRpcSun15HttpTransportFactory) {
+			if (protocol == RPCProtocol.RPC_HTTP) {
+				String proxyHost = System.getProperty("http.proxyHost");
+				String proxyPortString = System.getProperty("http.proxyPort");
+				if (proxyHost != null && !proxyHost.isEmpty()) {
+					int proxyPort = 80;
+					if (proxyPortString != null && !proxyPortString.isEmpty()) {
+						try {
+							proxyPort = Integer.parseInt(proxyPortString);
+						} catch (NumberFormatException e) {
+							// Port badly defined, keep the default
+						}
+					}
+					Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
+					((XmlRpcSun15HttpTransportFactory) factory).setProxy(proxy);
+				}
+			} else {
+				String proxyHost = System.getProperty("https.proxyHost");
+				if (proxyHost == null || proxyHost.isEmpty()) {
+					proxyHost = System.getProperty("http.proxyHost");
+				}
+				String proxyPortString = System.getProperty("https.proxyPort");
+				if (proxyPortString == null || proxyPortString.isEmpty()) {
+					proxyPortString = System.getProperty("http.proxyPort");
+				}
+
+				if (proxyHost != null && !proxyHost.isEmpty()) {
+					int proxyPort = 443;
+					if (proxyPortString != null && !proxyPortString.isEmpty()) {
+						try {
+							proxyPort = Integer.parseInt(proxyPortString);
+						} catch (NumberFormatException e) {
+							// Port badly defined, keep the default
+						}
+					}
+					Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
+					((XmlRpcSun15HttpTransportFactory) factory).setProxy(proxy);
+				}
+			}
+		} else {
+			System.err.println("No transport factory or not compatible with Proxy support!");
+		}
+
 		XmlRpcClientConfigImpl xmlrpcConfigLogin = new XmlRpcClientConfigImpl();
 		
 		// OpenERP does not support extensions
