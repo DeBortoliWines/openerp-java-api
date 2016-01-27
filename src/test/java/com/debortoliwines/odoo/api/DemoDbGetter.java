@@ -15,9 +15,11 @@ import java.util.Properties;
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
+import org.junit.Ignore;
 
 import com.debortoliwines.odoo.api.OpenERPXmlRpcProxy.RPCProtocol;
 
+@Ignore
 public class DemoDbGetter {
 	private static final String HTTP_PROTOCOL = "http://";
 	private static final String HTTPS_PROTOCOL = "https://";
