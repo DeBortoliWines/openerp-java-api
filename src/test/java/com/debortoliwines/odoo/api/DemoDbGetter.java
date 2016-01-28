@@ -17,7 +17,7 @@ import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
 import org.junit.Ignore;
 
-import com.debortoliwines.odoo.api.OpenERPXmlRpcProxy.RPCProtocol;
+import com.debortoliwines.odoo.api.OdooXmlRpcProxy.RPCProtocol;
 
 @Ignore
 public class DemoDbGetter {

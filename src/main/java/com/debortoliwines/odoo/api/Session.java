@@ -24,8 +24,8 @@ import java.util.HashMap;
 
 import org.apache.xmlrpc.XmlRpcException;
 
-import com.debortoliwines.odoo.api.OpenERPXmlRpcProxy.RPCProtocol;
-import com.debortoliwines.odoo.api.OpenERPXmlRpcProxy.RPCServices;
+import com.debortoliwines.odoo.api.OdooXmlRpcProxy.RPCProtocol;
+import com.debortoliwines.odoo.api.OdooXmlRpcProxy.RPCServices;
 
 /***
  * Manages an OpenERP session by holding context and initiating all calls to the server.
@@ -44,7 +44,7 @@ public class Session {
 	private static boolean connecting = false;
 	private RPCProtocol protocol; 
 	
-	private OpenERPXmlRpcProxy objectClient;
+	private OdooXmlRpcProxy objectClient;
 
 	/***
    * Session constructor
@@ -62,7 +62,7 @@ public class Session {
     this.databaseName = databaseName;
     this.userName = userName;
     this.password = password;
-		this.objectClient = new OpenERPXmlRpcProxy(protocol, host, port, RPCServices.RPC_OBJECT);
+		this.objectClient = new OdooXmlRpcProxy(protocol, host, port, RPCServices.RPC_OBJECT);
   }
 	
 	/***
@@ -127,7 +127,7 @@ public class Session {
 	}
 
 	int authenticate() throws XmlRpcException, Exception {
-		OpenERPXmlRpcProxy commonClient = new OpenERPXmlRpcProxy(protocol, host, port, RPCServices.RPC_COMMON);
+		OdooXmlRpcProxy commonClient = new OdooXmlRpcProxy(protocol, host, port, RPCServices.RPC_COMMON);
 
 		Object id = commonClient.execute("login", new Object[] { databaseName, userName, password });
 
@@ -184,7 +184,7 @@ public class Session {
 	 */
 	public ArrayList<String> getDatabaseList (String host, int port) throws XmlRpcException
 	{
-		return OpenERPXmlRpcProxy.getDatabaseList(protocol, host, port);
+		return OdooXmlRpcProxy.getDatabaseList(protocol, host, port);
 	}
 	
 	/**
@@ -231,7 +231,7 @@ public class Session {
 	 * @throws XmlRpcException
 	 */
 	public Version getServerVersion() throws XmlRpcException{
-	  return OpenERPXmlRpcProxy.getServerVersion(protocol, host, port);
+	  return OdooXmlRpcProxy.getServerVersion(protocol, host, port);
 	}
 	
 	/**

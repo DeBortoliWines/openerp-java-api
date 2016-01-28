@@ -1,7 +1,7 @@
 /*
  *   Copyright 2011-2012, 2014 De Bortoli Wines Pty Limited (Australia)
  *
- *   This file is part of OpenERPJavaAPI.
+ *   This file is part of OdooJavaAPI.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -32,14 +32,15 @@ import org.apache.xmlrpc.client.XmlRpcSun15HttpTransportFactory;
 import org.apache.xmlrpc.client.XmlRpcTransportFactory;
 
 /**
- * An XMLRRPC Client that connects to OpenERP 
+ * An XMLRRPC Client that connects to Odoo
+ * 
  * @author Pieter van der Merwe
+ * @author fpoyer
  */
-public class OpenERPXmlRpcProxy extends XmlRpcClient {
+public class OdooXmlRpcProxy extends XmlRpcClient {
 	
 	/**
-	 * Enum for the main RPC services that OpenERP expose 
-	 * @author Pieter van der Merwe
+	 * Enum for the main RPC services that Odoo expose
 	 */
 	public enum RPCServices {
 		RPC_COMMON,
@@ -48,9 +49,8 @@ public class OpenERPXmlRpcProxy extends XmlRpcClient {
 	}
 	
 	/**
-   * Enum for the RPC protocol used to connect to OpenERP 
-   * @author Pieter van der Merwe
-   */
+	 * Enum for the RPC protocol used to connect to Odoo
+	 */
   public enum RPCProtocol {
     RPC_HTTP,
     RPC_HTTPS
@@ -61,13 +61,19 @@ public class OpenERPXmlRpcProxy extends XmlRpcClient {
 	private final String RPC_DATABASE_URL = "/xmlrpc/2/db";
 	
 	/**
-	 * Proxy object to handle calls to and from the OpenERP server
-	 * @param protocol Protocol to use when connecting to the RPC service ex. http/https
-   * @param host Host name or IP address where the OpenERP server is hosted
-	 * @param port XML-RPC port number to connect to.  Typically 8069.
-	 * @param service OpenERP webservice to call (db/common etc)
+	 * Proxy object to handle calls to and from the Odoo server
+	 * 
+	 * @param protocol
+	 *            Protocol to use when connecting to the RPC service ex.
+	 *            http/https
+	 * @param host
+	 *            Host name or IP address where the Odoo server is hosted
+	 * @param port
+	 *            XML-RPC port number to connect to. Typically 8069.
+	 * @param service
+	 *            Odoo webservice to call (db, common or object)
 	 */
-	public OpenERPXmlRpcProxy(RPCProtocol protocol, String host, int port, RPCServices service) {
+	public OdooXmlRpcProxy(RPCProtocol protocol, String host, int port, RPCServices service) {
 		super();
 		
 		String URL = "";
@@ -142,7 +148,7 @@ public class OpenERPXmlRpcProxy extends XmlRpcClient {
 
 		XmlRpcClientConfigImpl xmlrpcConfigLogin = new XmlRpcClientConfigImpl();
 		
-		// OpenERP does not support extensions
+		// Odoo does not support extensions
 		xmlrpcConfigLogin.setEnabledForExtensions(false);
 		
 		// The URL is hardcoded and can not be malformed
@@ -155,26 +161,36 @@ public class OpenERPXmlRpcProxy extends XmlRpcClient {
 	}
 	
 	/**
-	 * Proxy object to handle calls to and from the OpenERP server.  Uses the http protocol to connect.
-   * @param host Host name or IP address where the OpenERP server is hosted
-   * @param port XML-RPC port number to connect to.  Typically 8069.
-   * @param service OpenERP webservice to call (db/common etc)
-   */
-  public OpenERPXmlRpcProxy(String host, int port, RPCServices service) {
+	 * Proxy object to handle calls to and from the Odoo server. Uses the http
+	 * protocol to connect.
+	 * 
+	 * @param host
+	 *            Host name or IP address where the Odoo server is hosted
+	 * @param port
+	 *            XML-RPC port number to connect to. Typically 8069.
+	 * @param service
+	 *            Odoo webservice to call (db/common etc)
+	 */
+  public OdooXmlRpcProxy(String host, int port, RPCServices service) {
     this(RPCProtocol.RPC_HTTP, host, port, service);
   }
 	
-  /***
-   * Get a list of databases available on a specific host and port
-   * @param protocol Protocol to use when connecting to the RPC service ex. http/https
-   * @param host Host name or IP address where the OpenERP server is hosted
-   * @param port XML-RPC port number to connect to
-   * @return A list of databases available for the OpenERP instance
-   * @throws XmlRpcException
-   */
+  	/***
+	 * Get a list of databases available on a specific host and port
+	 * 
+	 * @param protocol
+	 *            Protocol to use when connecting to the RPC service ex.
+	 *            http/https
+	 * @param host
+	 *            Host name or IP address where the Odoo server is hosted
+	 * @param port
+	 *            XML-RPC port number to connect to
+	 * @return A list of databases available for the Odoo instance
+	 * @throws XmlRpcException
+	 */
   public static ArrayList<String> getDatabaseList (RPCProtocol protocol, String host, int port) throws XmlRpcException
   {
-    OpenERPXmlRpcProxy client = new OpenERPXmlRpcProxy(protocol, host, port, RPCServices.RPC_DATABASE);
+    OdooXmlRpcProxy client = new OdooXmlRpcProxy(protocol, host, port, RPCServices.RPC_DATABASE);
     
     //Retrieve databases
     Object [] result = (Object []) client.execute("list", new Object[] {});
@@ -186,41 +202,53 @@ public class OpenERPXmlRpcProxy extends XmlRpcClient {
     return finalResults;
   }
   
-  /***
-   * Get a list of databases available on a specific host and port with the http protocol.
-   * @param host Host name or IP address where the OpenERP server is hosted
-   * @param port XML-RPC port number to connect to
-   * @return A list of databases available for the OpenERP instance
-   * @throws XmlRpcException
-   */
+  	/***
+	 * Get a list of databases available on a specific host and port with the
+	 * http protocol.
+	 * 
+	 * @param host
+	 *            Host name or IP address where the Odoo server is hosted
+	 * @param port
+	 *            XML-RPC port number to connect to
+	 * @return A list of databases available for the Odoo instance
+	 * @throws XmlRpcException
+	 */
   public static ArrayList<String> getDatabaseList (String host, int port) throws XmlRpcException
   {
     return getDatabaseList(RPCProtocol.RPC_HTTP, host, port);
   }
   
-  /***
-   * Returns the OpenERP server version.  For example 7.0-20130216-002451 or 6.1-1
-   * @param host Host name or IP address where the OpenERP server is hosted
-   * @param port XML-RPC port number to connect to
-   * @return The version number as a String
-   * @throws XmlRpcException
-   */
+  	/***
+	 * Returns the Odoo server version. For example 7.0-20130216-002451 or 6.1-1
+	 * 
+	 * @param host
+	 *            Host name or IP address where the Odoo server is hosted
+	 * @param port
+	 *            XML-RPC port number to connect to
+	 * @return The version number as a String
+	 * @throws XmlRpcException
+	 */
   public static Version getServerVersion (String host, int port) throws XmlRpcException
   {
     return getServerVersion(RPCProtocol.RPC_HTTP, host, port);
   }
   
-  /***
-   * Returns the OpenERP server version.  For example 7.0-20130216-002451 or 6.1-1
-   * @param protocol Protocol to use when connecting to the RPC service ex. http/https
-   * @param host Host name or IP address where the OpenERP server is hosted
-   * @param port XML-RPC port number to connect to
-   * @return The version number as a String
-   * @throws XmlRpcException
-   */
+  	/***
+	 * Returns the Odoo server version. For example 7.0-20130216-002451 or 6.1-1
+	 * 
+	 * @param protocol
+	 *            Protocol to use when connecting to the RPC service ex.
+	 *            http/https
+	 * @param host
+	 *            Host name or IP address where the Odoo server is hosted
+	 * @param port
+	 *            XML-RPC port number to connect to
+	 * @return The version number as a String
+	 * @throws XmlRpcException
+	 */
   public static Version getServerVersion (RPCProtocol protocol, String host, int port) throws XmlRpcException
   {
-    OpenERPXmlRpcProxy client = new OpenERPXmlRpcProxy(protocol, host, port, RPCServices.RPC_DATABASE);
+    OdooXmlRpcProxy client = new OdooXmlRpcProxy(protocol, host, port, RPCServices.RPC_DATABASE);
     
     return new Version(client.execute("server_version", new Object[] {}).toString());
   }

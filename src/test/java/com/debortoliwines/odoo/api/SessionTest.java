@@ -26,7 +26,7 @@ import org.mockserver.socket.PortFactory;
 import org.mockserver.socket.SSLFactory;
 import org.mockserver.verify.VerificationTimes;
 
-import com.debortoliwines.odoo.api.OpenERPXmlRpcProxy.RPCProtocol;
+import com.debortoliwines.odoo.api.OdooXmlRpcProxy.RPCProtocol;
 
 public class SessionTest {
 	private static final String ADMIN = "admin";
