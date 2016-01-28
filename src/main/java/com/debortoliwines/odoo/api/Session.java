@@ -44,6 +44,8 @@ public class Session {
 	private static boolean connecting = false;
 	private RPCProtocol protocol; 
 	
+	private OpenERPXmlRpcProxy objectClient;
+
 	/***
    * Session constructor
    * @param protocol XML-RPC protocol to use.  ex http/https.
@@ -60,6 +62,7 @@ public class Session {
     this.databaseName = databaseName;
     this.userName = userName;
     this.password = password;
+		this.objectClient = new OpenERPXmlRpcProxy(protocol, host, port, RPCServices.RPC_OBJECT);
   }
 	
 	/***
@@ -98,7 +101,7 @@ public class Session {
 	 */
 	public void startSession() throws Exception {
 
-	  checkDatabasePresence();
+	  checkDatabasePresenceSafe();
 
 		// Synchronize all threads to login.  If you login with the same user at the same time you get concurrency
 		// errors in the OpenERP server (for example by running a multi threaded ETL process like Kettle).
@@ -136,25 +139,30 @@ public class Session {
 		return userID;
 	}
 
-	void checkDatabasePresence() {
+	void checkDatabasePresenceSafe() {
+		// 21/07/2012 - Database listing may not be enabled (--no-database-list
+		// or list_db=false).
+		// Only provides additional information in any case.
 		try {
 
-		    // 21/07/2012 - Database listing may not be enabled (--no-database-list or list_db=false).
-		    // Only provides additional information in any case.
-			ArrayList<String> dbList = getDatabaseList(host,port);
-			if (dbList.indexOf(databaseName) < 0){
-				StringBuffer dbListBuff = new StringBuffer();
-				for (String dbName : dbList)
-					dbListBuff.append(dbName + System.getProperty("line.separator"));
-  
-				throw new Exception("Error while connecting to Odoo.  Database [" + databaseName + "] "
-						+ " was not found in the following list: " + System.getProperty("line.separator") 
-						+ System.getProperty("line.separator") + dbListBuff.toString());
-			}
+			checkDatabasePresence();
 		  }
 		  catch(Exception e){
 			// e.printStackTrace();
 		  }
+	}
+
+	void checkDatabasePresence() throws XmlRpcException, Exception {
+		ArrayList<String> dbList = getDatabaseList(host, port);
+		if (dbList.indexOf(databaseName) < 0) {
+			StringBuffer dbListBuff = new StringBuffer();
+			for (String dbName : dbList)
+				dbListBuff.append(dbName + System.getProperty("line.separator"));
+
+			throw new Exception("Error while connecting to Odoo.  Database [" + databaseName + "] "
+					+ " was not found in the following list: " + System.getProperty("line.separator")
+					+ System.getProperty("line.separator") + dbListBuff.toString());
+		}
 	}
 	
 	private synchronized static void startConnecting(){
@@ -198,7 +206,6 @@ public class Session {
 		if (parameters != null && parameters.length > 0)
 			System.arraycopy(parameters, 0, params, connectionParams.length, parameters.length);
 		   
-		OpenERPXmlRpcProxy objectClient = new OpenERPXmlRpcProxy(protocol, host, port, RPCServices.RPC_OBJECT);
 		return objectClient.execute("execute", params);		
 	}
 	
@@ -214,9 +221,9 @@ public class Session {
 	public void executeWorkflow(final String objectName, final String signal, final int objectID) throws XmlRpcException {
     Object[] params = new Object[] {databaseName,userID,password,objectName,signal, objectID};
     
-    OpenERPXmlRpcProxy objectClient = new OpenERPXmlRpcProxy(protocol, host, port, RPCServices.RPC_OBJECT);
     objectClient.execute("exec_workflow", params);   
   }
+
 	
 	/**
 	 * Returns the OpenERP server version for this session
