@@ -2,16 +2,19 @@ package com.debortoliwines.odoo.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 
 import javax.net.ssl.HttpsURLConnection;
 
 import org.apache.xmlrpc.XmlRpcException;
 import org.assertj.core.api.SoftAssertions;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -26,6 +29,8 @@ import org.mockserver.verify.VerificationTimes;
 import com.debortoliwines.odoo.api.OpenERPXmlRpcProxy.RPCProtocol;
 
 public class SessionTest {
+	private static final String ADMIN = "admin";
+	private static final String MOCK_DATABASE_NAME = "demo_90_1453880126";
 	private static final int MOCKSERVER_PORT = PortFactory.findFreePort();
 	private static final String WRONG_DB = "wrong_db";
 	private static final String WRONG_DB_MESSAGE_REGEXP = "[\\w\\W]*[Dd]atabase \"?" + WRONG_DB
@@ -46,18 +51,17 @@ public class SessionTest {
 	private static ClientAndServer mockServer;
 
 	@BeforeClass
-	public static void startProxyAndServer() throws Exception {
+	public static void startProxy() throws Exception {
 		HttpsURLConnection.setDefaultSSLSocketFactory(SSLFactory.getInstance().sslContext().getSocketFactory());
 		// proxy =
 		// ClientAndProxy.startClientAndProxy(PortFactory.findFreePort());
+	}
+
+	@Before
+	public void startMockServer() throws Exception {
 		mockServer = ClientAndServer.startClientAndServer(MOCKSERVER_PORT);
-		mockDeniedDatabaseListing();
 		mockValidLogin();
 		mockGetContext();
-		mockLoginWrongUsername();
-		mockLoginWrongPassword();
-		mockLoginWrongDb();
-		mockServerVersionResponse();
 	}
 
 	private static void mockDeniedDatabaseListing() {
@@ -69,11 +73,24 @@ public class SessionTest {
 						"<?xml version='1.0'?>\n<methodResponse>\n<fault>\n<value><struct>\n<member>\n<name>faultCode</name>\n<value><int>3</int></value>\n</member>\n<member>\n<name>faultString</name>\n<value><string>Access denied</string></value>\n</member>\n</struct></value>\n</fault>\n</methodResponse>\n"));
 	}
 
+	private static void mockAllowedDatabaseListing() {
+		mockServer
+				.when(request().withMethod("POST").withPath("/xmlrpc/2/db")
+						.withBody(new StringBody(
+								"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>list</methodName><params/></methodCall>")))
+				.respond(response().withStatusCode(200).withBody(
+						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value>\n<array>\n<data>\n<value><string>"
+										+ MOCK_DATABASE_NAME
+								+ "</string></value>\n</data>\n</array>\n</value>\n</param>\n</params>\n</methodResponse>\n"));
+	}
+
 	private static void mockValidLogin() {
 		mockServer
 				.when(request().withMethod("POST").withPath("/xmlrpc/2/common")
 						.withBody(new StringBody(
-								"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>login</methodName><params><param><value>demo_90_1453880126</value></param><param><value>admin</value></param><param><value>admin</value></param></params></methodCall>")))
+						"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>login</methodName><params><param><value>"
+								+ MOCK_DATABASE_NAME + "</value></param><param><value>" + ADMIN
+								+ "</value></param><param><value>" + ADMIN + "</value></param></params></methodCall>")))
 				.respond(response().withStatusCode(200).withBody(
 						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><int>1</int></value>\n</param>\n</params>\n</methodResponse>\n"));
 	}
@@ -82,7 +99,10 @@ public class SessionTest {
 		mockServer
 				.when(request().withMethod("POST").withPath("/xmlrpc/2/object")
 						.withBody(new StringBody(
-								"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>execute</methodName><params><param><value>demo_90_1453880126</value></param><param><value><i4>1</i4></value></param><param><value>admin</value></param><param><value>res.users</value></param><param><value>context_get</value></param></params></methodCall>")))
+						"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>execute</methodName><params><param><value>"
+								+ MOCK_DATABASE_NAME
+								+ "</value></param><param><value><i4>1</i4></value></param><param><value>" + ADMIN
+								+ "</value></param><param><value>res.users</value></param><param><value>context_get</value></param></params></methodCall>")))
 				.respond(response().withStatusCode(200).withBody(
 						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><struct>\n<member>\n<name>lang</name>\n<value><string>en_US</string></value>\n</member>\n<member>\n<name>tz</name>\n<value><string>Europe/Brussels</string></value>\n</member>\n</struct></value>\n</param>\n</params>\n</methodResponse>\n"));
 	}
@@ -91,7 +111,10 @@ public class SessionTest {
 		mockServer
 				.when(request().withMethod("POST").withPath("/xmlrpc/2/common")
 						.withBody(new StringBody(
-								"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>login</methodName><params><param><value>demo_90_1453880126</value></param><param><value>wrong_userName</value></param><param><value>admin</value></param></params></methodCall>")))
+								"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>login</methodName><params><param><value>"
+										+ MOCK_DATABASE_NAME
+										+ "</value></param><param><value>wrong_userName</value></param><param><value>"
+										+ ADMIN + "</value></param></params></methodCall>")))
 				.respond(response().withStatusCode(200).withBody(
 						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><boolean>0</boolean></value>\n</param>\n</params>\n</methodResponse>\n"));
 	}
@@ -100,7 +123,9 @@ public class SessionTest {
 		mockServer
 				.when(request().withMethod("POST").withPath("/xmlrpc/2/common")
 						.withBody(new StringBody(
-								"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>login</methodName><params><param><value>demo_90_1453880126</value></param><param><value>admin</value></param><param><value>wrong_password</value></param></params></methodCall>")))
+								"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>login</methodName><params><param><value>"
+										+ MOCK_DATABASE_NAME + "</value></param><param><value>" + ADMIN
+										+ "</value></param><param><value>wrong_password</value></param></params></methodCall>")))
 				.respond(response().withStatusCode(200).withBody(
 						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><boolean>0</boolean></value>\n</param>\n</params>\n</methodResponse>\n"));
 	}
@@ -109,7 +134,9 @@ public class SessionTest {
 		mockServer
 				.when(request().withMethod("POST").withPath("/xmlrpc/2/common")
 						.withBody(new StringBody(
-								"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>login</methodName><params><param><value>wrong_db</value></param><param><value>admin</value></param><param><value>admin</value></param></params></methodCall>")))
+								"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>login</methodName><params><param><value>wrong_db</value></param><param><value>"
+										+ ADMIN + "</value></param><param><value>" + ADMIN
+										+ "</value></param></params></methodCall>")))
 				.respond(response().withStatusCode(200).withBody(
 						"<?xml version='1.0'?>\n<methodResponse>\n<fault>\n<value><struct>\n<member>\n<name>faultCode</name>\n<value><int>1</int></value>\n</member>\n<member>\n<name>faultString</name>\n<value><string>Traceback (most recent call last):\n  File \"/home/odoo/src/odoo/9.0/openerp/service/wsgi_server.py\", line 56, in xmlrpc_return\n    result = openerp.http.dispatch_rpc(service, method, params)\n  File \"/home/odoo/src/odoo/9.0/openerp/http.py\", line 114, in dispatch_rpc\n    result = dispatch(method, params)\n  File \"/home/odoo/src/odoo/9.0/openerp/service/common.py\", line 57, in dispatch\n    return g[exp_method_name](*params)\n  File \"/home/odoo/src/odoo/9.0/openerp/service/common.py\", line 23, in exp_login\n    res = security.login(db, login, password)\n  File \"/home/odoo/src/odoo/9.0/openerp/service/security.py\", line 8, in login\n    res_users = openerp.registry(db)['res.users']\n  File \"/home/odoo/src/odoo/9.0/openerp/__init__.py\", line 50, in registry\n    return modules.registry.RegistryManager.get(database_name)\n  File \"/home/odoo/src/odoo/9.0/openerp/modules/registry.py\", line 354, in get\n    update_module)\n  File \"/home/odoo/src/odoo/9.0/openerp/modules/registry.py\", line 371, in new\n    registry = Registry(db_name)\n  File \"/home/odoo/src/odoo/9.0/openerp/modules/registry.py\", line 63, in __init__\n    cr = self.cursor()\n  File \"/home/odoo/src/odoo/9.0/openerp/modules/registry.py\", line 278, in cursor\n    return self._db.cursor()\n  File \"/home/odoo/src/odoo/9.0/openerp/sql_db.py\", line 556, in cursor\n    return Cursor(self.__pool, self.dbname, self.dsn, serialized=serialized)\n  File \"/home/odoo/src/odoo/9.0/openerp/sql_db.py\", line 162, in __init__\n    self._cnx = pool.borrow(dsn)\n  File \"/home/odoo/src/odoo/9.0/openerp/sql_db.py\", line 445, in _locked\n    return fun(self, *args, **kwargs)\n  File \"/home/odoo/src/odoo/9.0/openerp/sql_db.py\", line 507, in borrow\n    result = psycopg2.connect(dsn=dsn, connection_factory=PsycoConnection)\n  File \"/usr/lib/python2.7/dist-packages/psycopg2/__init__.py\", line 179, in connect\n    connection_factory=connection_factory, async=async)\nOperationalError: FATAL:  database \"wrong_db\" does not exist\n\n</string></value>\n</member>\n</struct></value>\n</fault>\n</methodResponse>\n"));
 	}
@@ -123,9 +150,12 @@ public class SessionTest {
 						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><string>9.0e</string></value>\n</param>\n</params>\n</methodResponse>\n"));
 	}
 
-	@AfterClass
-	public static void stopServerAndProxy() {
+	@After
+	public void stopMockServer() throws Exception {
 		mockServer.stop();
+	}
+	@AfterClass
+	public static void stopProxy() throws Exception {
 		// proxy.dumpToLogAsJava();
 		// proxy.stop();
 	}
@@ -140,9 +170,9 @@ public class SessionTest {
 		SessionTest.protocol = RPCProtocol.RPC_HTTPS;
 		SessionTest.host = "localhost";
 		SessionTest.port = MOCKSERVER_PORT;
-		SessionTest.userName = "admin";
-		SessionTest.password = "admin";
-		SessionTest.databaseName = "demo_90_1453880126";
+		SessionTest.userName = ADMIN;
+		SessionTest.password = ADMIN;
+		SessionTest.databaseName = MOCK_DATABASE_NAME;
 
 	}
 
@@ -153,6 +183,10 @@ public class SessionTest {
 
 	@Test
 	public void should_throw_when_parameters_are_incorrect() throws Exception {
+		mockLoginWrongUsername();
+		mockLoginWrongPassword();
+		mockLoginWrongDb();
+
 		Session badSession = new Session(RPCProtocol.RPC_HTTPS, host, port, databaseName, WRONG_USERNAME, password);
 		Throwable thrown = catchThrowable(() -> badSession.startSession());
 
@@ -173,6 +207,7 @@ public class SessionTest {
 		softly.assertThat(thrown3).as("Bad db").isInstanceOf(XmlRpcException.class)
 				.hasMessageMatching(WRONG_DB_MESSAGE_REGEXP);
 		softly.assertThat(thrown4).as("Bad port").isInstanceOf(XmlRpcException.class);
+
 		// Don't forget to call SoftAssertions global verification !
 		softly.assertAll();
 	}
@@ -193,20 +228,63 @@ public class SessionTest {
 	}
 
 	@Test
-	public void shoudl_return_database_list() throws Exception {
-		// Either a list of available databases is returned, or the odoo server
-		// returns an error with a message instead of a fault code, leading to a
-		// ClassCastException
+	public void shoudl_return_database_list_or_throw() throws Exception {
+		// use SoftAssertions instead of direct assertThat methods
+		// to collect all failing assertions in one go
+		SoftAssertions softly = new SoftAssertions();
+
+		mockAllowedDatabaseListing();
 		try {
 			ArrayList<String> databaseList = session.getDatabaseList(host, port);
-			assertThat(databaseList).as("List of databases on server " + host).contains(databaseName);
+			softly.assertThat(databaseList).as("List of databases on server " + host).contains(MOCK_DATABASE_NAME);
 		} catch (XmlRpcException e) {
-			assertThat(e).as("XmlRpcException thrown when access is denied").hasMessage("Access denied");
+			softly.assertThat(e).as("Database listing allowed, no exception should have been throwed").isNull();
 		}
+
+		mockServer.reset();
+		mockDeniedDatabaseListing();
+		Throwable thrown = catchThrowable(() -> session.getDatabaseList(host, port));
+		softly.assertThat(thrown).as("XmlRpcException thrown when access is denied").isInstanceOf(XmlRpcException.class)
+				.hasMessage("Access denied");
+
+		// Don't forget to call SoftAssertions global verification !
+		softly.assertAll();
+	}
+
+	@Test
+	public void should_find_database_in_listing_or_throw() throws Exception {
+		// use SoftAssertions instead of direct assertThat methods
+		// to collect all failing assertions in one go
+		SoftAssertions softly = new SoftAssertions();
+
+		// Listing denied
+		mockDeniedDatabaseListing();
+		Throwable thrown = catchThrowable(() -> session.checkDatabasePresence());
+		softly.assertThat(thrown).as("Exception thrown when db listing disabled").isInstanceOf(Exception.class)
+				.hasMessage("Access denied");
+
+		// Listing allowed and db found
+		mockServer.reset();
+		mockAllowedDatabaseListing();
+		thrown = catchThrowable(() -> session.checkDatabasePresence());
+		softly.assertThat(thrown).as("Exception thrown when db listing enabled and db should be found").isNull();
+
+		// Listing allowed and db not found
+		session = new Session(protocol, host, port, WRONG_DB, userName, password);
+		thrown = catchThrowable(() -> session.checkDatabasePresence());
+		softly.assertThat(thrown).as("Exception thrown when db listing disabled").isInstanceOf(Exception.class)
+				.hasMessage("Error while connecting to Odoo.  Database [" + WRONG_DB
+						+ "]  was not found in the following list: " + System.getProperty("line.separator")
+						+ System.getProperty("line.separator") + MOCK_DATABASE_NAME
+						+ System.getProperty("line.separator"));
+
+		// Don't forget to call SoftAssertions global verification !
+		softly.assertAll();
 	}
 
 	@Test
 	public void shoudl_return_server_version() throws Exception {
+		mockServerVersionResponse();
 		Version version = session.getServerVersion();
 		assertThat(version).as("Server version").isNotNull();
 
@@ -224,7 +302,7 @@ public class SessionTest {
 			}
 
 			@Override
-			void checkDatabasePresence() {
+			void checkDatabasePresenceSafe() {
 				checkedDatabasePresence = true;
 			}
 
@@ -246,14 +324,64 @@ public class SessionTest {
 
 	@Test
 	public void should_send_given_parameters() throws Exception {
+		// Check parameters given are sent in order
 		mockServer
 				.when(request().withMethod("POST").withPath("/xmlrpc/2/object")
-						.withBody(new RegexBody(".*parameter1.*parameter2.*")))
+						.withBody(new RegexBody(".*objectName.*commandName.*")))
 				.respond(response().withStatusCode(200).withBody(
 						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><int>1</int></value>\n</param>\n</params>\n</methodResponse>\n"));
 		Object[] parameters = new Object[] { "parameter1", "parameter2" };
 		session.executeCommand("objectName", "commandName", parameters);
 		mockServer.verify(request().withBody(new RegexBody(".*parameter1.*parameter2.*")), VerificationTimes.once());
+
+		// Check empty array is working
+		parameters = new Object[] {};
+		session.executeCommand("objectName", "commandName", parameters);
+		mockServer.verify(request().withBody(new RegexBody(".*objectName.*commandName.*")),
+				VerificationTimes.exactly(2));
+
+		// Check null is working
+		parameters = null;
+		session.executeCommand("objectName", "commandName", parameters);
+		mockServer.verify(request().withBody(new RegexBody(".*objectName.*commandName.*")),
+				VerificationTimes.exactly(3));
+
+	}
+
+	@Test
+	public void should_call_method_execute_on_executeCommand() throws Exception {
+		mockServer
+				.when(request().withPath("/xmlrpc/2/object")
+						.withBody(RegexBody.regex(".*<methodName>execute</methodName>.*")))
+				.respond(response().withStatusCode(200).withBody(
+						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><int>1</int></value>\n</param>\n</params>\n</methodResponse>\n"));
+		session.executeCommand("objectName", "commandName", null);
+		mockServer.verify(request().withBody(new RegexBody(".*<methodName>execute</methodName>.*")),
+				VerificationTimes.once());
+	}
+
+	@Test
+	public void should_call_method_exec_workflow_on_executeCommand() throws Exception {
+		mockServer
+				.when(request().withPath("/xmlrpc/2/object")
+						.withBody(RegexBody.regex(".*<methodName>exec_workflow</methodName>.*")))
+				.respond(response().withStatusCode(200).withBody(
+						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><int>1</int></value>\n</param>\n</params>\n</methodResponse>\n"));
+		session.executeWorkflow("objectName", "commandName", 42424242);
+		mockServer.verify(request().withBody(new RegexBody(".*<methodName>exec_workflow</methodName>.*")),
+				VerificationTimes.once());
+	}
+
+	@Test
+	public void should_default_protocol_to_http() throws Exception {
+		session = new Session(host, port, databaseName, userName, password);
+		Field protocolField = Session.class.getDeclaredField("protocol");
+		if (protocolField != null) {
+			protocolField.setAccessible(true);
+		} else {
+			fail("protocol field not found in class " + Session.class.getName());
+		}
+		assertThat(protocolField.get(session)).isEqualTo(RPCProtocol.RPC_HTTP);
 	}
 
 	// /**
