@@ -1,7 +1,7 @@
 /*
  *   Copyright 2011-2014 De Bortoli Wines Pty Limited (Australia)
  *
- *   This file is part of OpenERPJavaAPI.
+ *   This file is part of OdooJavaAPI.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -28,7 +28,9 @@ import com.debortoliwines.odoo.api.OdooXmlRpcProxy.RPCProtocol;
 import com.debortoliwines.odoo.api.OdooXmlRpcProxy.RPCServices;
 
 /***
- * Manages an OpenERP session by holding context and initiating all calls to the server.
+ * Manages an Odoo session by holding context and initiating all calls to the
+ * server.
+ * 
  * @author Pieter van der Merwe
  *
  */
@@ -47,14 +49,21 @@ public class Session {
 	private OdooXmlRpcProxy objectClient;
 
 	/***
-   * Session constructor
-   * @param protocol XML-RPC protocol to use.  ex http/https.
-   * @param host Host name or IP address where the OpenERP server is hosted
-   * @param port XML-RPC port number to connect to.  Typically 8069.
-   * @param databaseName Database name to connect to
-   * @param userName Username to log into the OpenERP server
-   * @param password Password to log into the OpenERP server
-   */
+	 * Session constructor
+	 * 
+	 * @param protocol
+	 *            XML-RPC protocol to use. ex http/https.
+	 * @param host
+	 *            Host name or IP address where the Odoo server is hosted
+	 * @param port
+	 *            XML-RPC port number to connect to. Typically 8069.
+	 * @param databaseName
+	 *            Database name to connect to
+	 * @param userName
+	 *            Username to log into the Odoo server
+	 * @param password
+	 *            Password to log into the Odoo server
+	 */
   public Session(RPCProtocol protocol, String host, int port, String databaseName, String userName, String password){
     this.protocol = protocol;
     this.host = host;
@@ -66,23 +75,30 @@ public class Session {
   }
 	
 	/***
-	 * Session constructor.  Uses default http protocol to connect.
-	 * @param host Host name or IP address where the OpenERP server is hosted
-	 * @param port XML-RPC port number to connect to.  Typically 8069.
-	 * @param databaseName Database name to connect to
-	 * @param userName Username to log into the OpenERP server
-	 * @param password Password to log into the OpenERP server
+	 * Session constructor. Uses default http protocol to connect.
+	 * 
+	 * @param host
+	 *            Host name or IP address where the Odoo server is hosted
+	 * @param port
+	 *            XML-RPC port number to connect to. Typically 8069.
+	 * @param databaseName
+	 *            Database name to connect to
+	 * @param userName
+	 *            Username to log into the Odoo server
+	 * @param password
+	 *            Password to log into the Odoo server
 	 */
 	public Session(String host, int port, String databaseName, String userName, String password){
 		this(RPCProtocol.RPC_HTTP, host, port, databaseName, userName, password);
 	}
 	
 	/**
-	 * Returns an initialized OpenERPCommand object for ease of reference.
-	 * A OpenERPCommand provides basic calls to the server
+	 * Returns an initialized OdooCommand object for ease of reference. A
+	 * OdooCommand provides basic calls to the server
+	 * 
 	 * @return
 	 */
-	public OpenERPCommand getOpenERPCommand(){
+	public OpenERPCommand getOdooCommand() {
 		return new OpenERPCommand(this);
 	}
 	
@@ -96,15 +112,19 @@ public class Session {
 	}
 
 	/***
-	 * Starts a session on the OpenERP server and saves the UserID for use in later calls
-	 * @throws Exception upon failure to connect
+	 * Starts a session on the Odoo server and saves the UserID for use in later
+	 * calls
+	 * 
+	 * @throws Exception
+	 *             upon failure to connect
 	 */
 	public void startSession() throws Exception {
 
 	  checkDatabasePresenceSafe();
 
 		// Synchronize all threads to login.  If you login with the same user at the same time you get concurrency
-		// errors in the OpenERP server (for example by running a multi threaded ETL process like Kettle).
+		// errors in the Odoo server (for example by running a multi threaded
+		// ETL process like Kettle).
 		Session.startConnecting();
 		try {
 			authenticate();
@@ -118,9 +138,9 @@ public class Session {
 	void getRemoteContext() throws XmlRpcException {
 		this.context.clear();
 		@SuppressWarnings("unchecked")
-		HashMap<String, Object> openerpContext = (HashMap<String, Object>) this.executeCommand("res.users",
+		HashMap<String, Object> odooContext = (HashMap<String, Object>) this.executeCommand("res.users",
 				"context_get", new Object[] {});
-		this.context.putAll(openerpContext);
+		this.context.putAll(odooContext);
 
 		// Standard behavior is web/gui clients.
 		this.context.setActiveTest(true);
@@ -153,7 +173,7 @@ public class Session {
 	}
 
 	void checkDatabasePresence() throws XmlRpcException, Exception {
-		ArrayList<String> dbList = getDatabaseList(host, port);
+		ArrayList<String> dbList = getDatabaseList(protocol, host, port);
 		if (dbList.indexOf(databaseName) < 0) {
 			StringBuffer dbListBuff = new StringBuffer();
 			for (String dbName : dbList)
@@ -176,23 +196,59 @@ public class Session {
 	}
 	
 	/***
-	 * Get a list of databases available on a specific host and port
-	 * @param host Host name or IP address where the OpenERP server is hosted
-	 * @param port XML-RPC port number to connect to. Typically 8069.
-	 * @return A list of databases available for the OpenERP instance
+	 * Get a list of databases available on a specific host and port with the
+	 * http protocol.
+	 * 
+	 * @param host
+	 *            Host name or IP address where the Odoo server is hosted
+	 * @param port
+	 *            XML-RPC port number to connect to
+	 * @return A list of databases available for the Odoo instance
 	 * @throws XmlRpcException
 	 */
 	public ArrayList<String> getDatabaseList (String host, int port) throws XmlRpcException
 	{
-		return OdooXmlRpcProxy.getDatabaseList(protocol, host, port);
+		return getDatabaseList(RPCProtocol.RPC_HTTP, host, port);
 	}
 	
+	/***
+	 * Get a list of databases available on a specific host and port
+	 * 
+	 * @param protocol
+	 *            Protocol to use when connecting to the RPC service ex.
+	 *            http/https
+	 * @param host
+	 *            Host name or IP address where the Odoo server is hosted
+	 * @param port
+	 *            XML-RPC port number to connect to
+	 * @return A list of databases available for the Odoo instance
+	 * @throws XmlRpcException
+	 */
+	public static ArrayList<String> getDatabaseList(RPCProtocol protocol, String host, int port)
+			throws XmlRpcException {
+		OdooXmlRpcProxy client = new OdooXmlRpcProxy(protocol, host, port, RPCServices.RPC_DATABASE);
+
+		// Retrieve databases
+		Object[] result = (Object[]) client.execute("list", new Object[] {});
+
+		ArrayList<String> finalResults = new ArrayList<String>();
+		for (Object res : result)
+			finalResults.add((String) res);
+
+		return finalResults;
+	}
+
 	/**
 	 * Executes any command on the server linked to the /xmlrpc/object service.
 	 * All parameters are prepended by: "databaseName,userID,password"
-	 * @param objectName Object or model name to execute the command on
-	 * @param commandName Command name to execute
-	 * @param parameters List of parameters for the command.  For easy of use, consider the OpenERPCommand object or ObjectAdapter
+	 * 
+	 * @param objectName
+	 *            Object or model name to execute the command on
+	 * @param commandName
+	 *            Command name to execute
+	 * @param parameters
+	 *            List of parameters for the command. For easy of use, consider
+	 *            the OdooCommand object or ObjectAdapter
 	 * @return The result of the call
 	 * @throws XmlRpcException
 	 */
@@ -226,7 +282,8 @@ public class Session {
 
 	
 	/**
-	 * Returns the OpenERP server version for this session
+	 * Returns the Odoo server version for this session
+	 * 
 	 * @return
 	 * @throws XmlRpcException
 	 */

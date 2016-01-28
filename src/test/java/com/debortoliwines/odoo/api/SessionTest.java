@@ -283,7 +283,7 @@ public class SessionTest {
 	}
 
 	@Test
-	public void shoudl_return_server_version() throws Exception {
+	public void should_return_server_version() throws Exception {
 		mockServerVersionResponse();
 		Version version = session.getServerVersion();
 		assertThat(version).as("Server version").isNotNull();

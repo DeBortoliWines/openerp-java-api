@@ -23,7 +23,6 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
-import java.util.ArrayList;
 
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
@@ -101,6 +100,23 @@ public class OdooXmlRpcProxy extends XmlRpcClient {
 			break;
 		}
 
+		useProxyIfAvailable(protocol);
+
+		XmlRpcClientConfigImpl xmlrpcConfigLogin = new XmlRpcClientConfigImpl();
+		
+		// Odoo does not support extensions
+		xmlrpcConfigLogin.setEnabledForExtensions(false);
+		
+		// The URL is hardcoded and can not be malformed
+		try {
+			xmlrpcConfigLogin.setServerURL(new URL(protocol_str, host, port, URL));
+		} catch (MalformedURLException e) {
+		}
+	
+		this.setConfig(xmlrpcConfigLogin);
+	}
+
+	void useProxyIfAvailable(RPCProtocol protocol) {
 		// If a proxy is defined, use it:
 		XmlRpcTransportFactory factory = this.getTransportFactory();
 		if (factory != null && factory instanceof XmlRpcSun15HttpTransportFactory) {
@@ -145,94 +161,8 @@ public class OdooXmlRpcProxy extends XmlRpcClient {
 		} else {
 			System.err.println("No transport factory or not compatible with Proxy support!");
 		}
-
-		XmlRpcClientConfigImpl xmlrpcConfigLogin = new XmlRpcClientConfigImpl();
-		
-		// Odoo does not support extensions
-		xmlrpcConfigLogin.setEnabledForExtensions(false);
-		
-		// The URL is hardcoded and can not be malformed
-		try {
-			xmlrpcConfigLogin.setServerURL(new URL(protocol_str, host, port, URL));
-		} catch (MalformedURLException e) {
-		}
-	
-		this.setConfig(xmlrpcConfigLogin);
 	}
 	
-	/**
-	 * Proxy object to handle calls to and from the Odoo server. Uses the http
-	 * protocol to connect.
-	 * 
-	 * @param host
-	 *            Host name or IP address where the Odoo server is hosted
-	 * @param port
-	 *            XML-RPC port number to connect to. Typically 8069.
-	 * @param service
-	 *            Odoo webservice to call (db/common etc)
-	 */
-  public OdooXmlRpcProxy(String host, int port, RPCServices service) {
-    this(RPCProtocol.RPC_HTTP, host, port, service);
-  }
-	
-  	/***
-	 * Get a list of databases available on a specific host and port
-	 * 
-	 * @param protocol
-	 *            Protocol to use when connecting to the RPC service ex.
-	 *            http/https
-	 * @param host
-	 *            Host name or IP address where the Odoo server is hosted
-	 * @param port
-	 *            XML-RPC port number to connect to
-	 * @return A list of databases available for the Odoo instance
-	 * @throws XmlRpcException
-	 */
-  public static ArrayList<String> getDatabaseList (RPCProtocol protocol, String host, int port) throws XmlRpcException
-  {
-    OdooXmlRpcProxy client = new OdooXmlRpcProxy(protocol, host, port, RPCServices.RPC_DATABASE);
-    
-    //Retrieve databases
-    Object [] result = (Object []) client.execute("list", new Object[] {});
-
-    ArrayList<String> finalResults = new ArrayList<String>();
-    for (Object res : result)
-      finalResults.add((String) res);
-
-    return finalResults;
-  }
-  
-  	/***
-	 * Get a list of databases available on a specific host and port with the
-	 * http protocol.
-	 * 
-	 * @param host
-	 *            Host name or IP address where the Odoo server is hosted
-	 * @param port
-	 *            XML-RPC port number to connect to
-	 * @return A list of databases available for the Odoo instance
-	 * @throws XmlRpcException
-	 */
-  public static ArrayList<String> getDatabaseList (String host, int port) throws XmlRpcException
-  {
-    return getDatabaseList(RPCProtocol.RPC_HTTP, host, port);
-  }
-  
-  	/***
-	 * Returns the Odoo server version. For example 7.0-20130216-002451 or 6.1-1
-	 * 
-	 * @param host
-	 *            Host name or IP address where the Odoo server is hosted
-	 * @param port
-	 *            XML-RPC port number to connect to
-	 * @return The version number as a String
-	 * @throws XmlRpcException
-	 */
-  public static Version getServerVersion (String host, int port) throws XmlRpcException
-  {
-    return getServerVersion(RPCProtocol.RPC_HTTP, host, port);
-  }
-  
   	/***
 	 * Returns the Odoo server version. For example 7.0-20130216-002451 or 6.1-1
 	 * 
@@ -246,7 +176,7 @@ public class OdooXmlRpcProxy extends XmlRpcClient {
 	 * @return The version number as a String
 	 * @throws XmlRpcException
 	 */
-  public static Version getServerVersion (RPCProtocol protocol, String host, int port) throws XmlRpcException
+	public static Version getServerVersion(RPCProtocol protocol, String host, int port) throws XmlRpcException
   {
     OdooXmlRpcProxy client = new OdooXmlRpcProxy(protocol, host, port, RPCServices.RPC_DATABASE);
     

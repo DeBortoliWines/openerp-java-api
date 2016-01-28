@@ -61,7 +61,7 @@ public class ObjectAdapter {
 	 * @throws OpeneERPApiException
 	 */
 	public ObjectAdapter(Session session, String objectName) throws XmlRpcException, OpeneERPApiException{
-		this.commands = session.getOpenERPCommand();
+		this.commands = session.getOdooCommand();
 		this.objectName = objectName;
 		this.server_version = session.getServerVersion();
 
@@ -643,7 +643,7 @@ public class ObjectAdapter {
 		
 		switch (fld.getType()) {
 		case BOOLEAN:
-			value = (Boolean) value;
+			// value = value;
 			break;
 		case FLOAT:
 			value = Double.parseDouble(value.toString());
