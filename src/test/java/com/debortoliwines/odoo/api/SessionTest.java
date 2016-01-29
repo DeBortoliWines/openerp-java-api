@@ -11,14 +11,15 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSocketFactory;
 
 import org.apache.xmlrpc.XmlRpcException;
 import org.assertj.core.api.SoftAssertions;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockserver.integration.ClientAndProxy;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.RegexBody;
 import org.mockserver.model.StringBody;
@@ -26,9 +27,11 @@ import org.mockserver.socket.PortFactory;
 import org.mockserver.socket.SSLFactory;
 import org.mockserver.verify.VerificationTimes;
 
+import com.debortoliwines.odoo.api.DemoDbGetter.DemoDbInfoRequester;
 import com.debortoliwines.odoo.api.OdooXmlRpcProxy.RPCProtocol;
 
 public class SessionTest {
+	private static final String MOCKSERVER_HOST = "localhost";
 	private static final String ADMIN = "admin";
 	private static final String MOCK_DATABASE_NAME = "demo_90_1453880126";
 	private static final int MOCKSERVER_PORT = PortFactory.findFreePort();
@@ -47,21 +50,29 @@ public class SessionTest {
 
 	private Session session;
 
-	// private static ClientAndProxy proxy;
+	private static ClientAndProxy proxy;
 	private static ClientAndServer mockServer;
+
+	private static boolean useMockServer = true;
+	private static SSLSocketFactory previousFactory;
 
 	@BeforeClass
 	public static void startProxy() throws Exception {
-		HttpsURLConnection.setDefaultSSLSocketFactory(SSLFactory.getInstance().sslContext().getSocketFactory());
-		// proxy =
-		// ClientAndProxy.startClientAndProxy(PortFactory.findFreePort());
+		if (isUsingMockServer()) {
+			previousFactory = HttpsURLConnection.getDefaultSSLSocketFactory();
+			HttpsURLConnection.setDefaultSSLSocketFactory(SSLFactory.getInstance().sslContext().getSocketFactory());
+			proxy = ClientAndProxy.startClientAndProxy(PortFactory.findFreePort());
+			mockServer = ClientAndServer.startClientAndServer(MOCKSERVER_PORT);
+		}
 	}
 
 	@Before
 	public void startMockServer() throws Exception {
-		mockServer = ClientAndServer.startClientAndServer(MOCKSERVER_PORT);
-		mockValidLogin();
-		mockGetContext();
+		if (isUsingMockServer()) {
+			mockServer.reset();
+			mockValidLogin();
+			mockGetContext();
+		}
 	}
 
 	private static void mockDeniedDatabaseListing() {
@@ -80,14 +91,13 @@ public class SessionTest {
 								"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>list</methodName><params/></methodCall>")))
 				.respond(response().withStatusCode(200).withBody(
 						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value>\n<array>\n<data>\n<value><string>"
-										+ MOCK_DATABASE_NAME
+								+ MOCK_DATABASE_NAME
 								+ "</string></value>\n</data>\n</array>\n</value>\n</param>\n</params>\n</methodResponse>\n"));
 	}
 
 	private static void mockValidLogin() {
 		mockServer
-				.when(request().withMethod("POST").withPath("/xmlrpc/2/common")
-						.withBody(new StringBody(
+				.when(request().withMethod("POST").withPath("/xmlrpc/2/common").withBody(new StringBody(
 						"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>login</methodName><params><param><value>"
 								+ MOCK_DATABASE_NAME + "</value></param><param><value>" + ADMIN
 								+ "</value></param><param><value>" + ADMIN + "</value></param></params></methodCall>")))
@@ -97,8 +107,7 @@ public class SessionTest {
 
 	private static void mockGetContext() {
 		mockServer
-				.when(request().withMethod("POST").withPath("/xmlrpc/2/object")
-						.withBody(new StringBody(
+				.when(request().withMethod("POST").withPath("/xmlrpc/2/object").withBody(new StringBody(
 						"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>execute</methodName><params><param><value>"
 								+ MOCK_DATABASE_NAME
 								+ "</value></param><param><value><i4>1</i4></value></param><param><value>" + ADMIN
@@ -150,14 +159,14 @@ public class SessionTest {
 						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><string>9.0e</string></value>\n</param>\n</params>\n</methodResponse>\n"));
 	}
 
-	@After
-	public void stopMockServer() throws Exception {
-		mockServer.stop();
-	}
 	@AfterClass
 	public static void stopProxy() throws Exception {
-		// proxy.dumpToLogAsJava();
-		// proxy.stop();
+		if (isUsingMockServer()) {
+			mockServer.stop();
+			proxy.dumpToLogAsJava();
+			proxy.stop();
+			HttpsURLConnection.setDefaultSSLSocketFactory(previousFactory);
+		}
 	}
 
 	/*
@@ -165,14 +174,16 @@ public class SessionTest {
 	 */
 	@BeforeClass
 	public static void requestDemoDb() throws IOException, XmlRpcException {
-		// DemoDbGetter.getDemoDb(new DemoDbConnectionDataSetter());
-
-		SessionTest.protocol = RPCProtocol.RPC_HTTPS;
-		SessionTest.host = "localhost";
-		SessionTest.port = MOCKSERVER_PORT;
-		SessionTest.userName = ADMIN;
-		SessionTest.password = ADMIN;
-		SessionTest.databaseName = MOCK_DATABASE_NAME;
+		if (isUsingMockServer()) {
+			SessionTest.protocol = RPCProtocol.RPC_HTTPS;
+			SessionTest.host = MOCKSERVER_HOST;
+			SessionTest.port = MOCKSERVER_PORT;
+			SessionTest.userName = ADMIN;
+			SessionTest.password = ADMIN;
+			SessionTest.databaseName = MOCK_DATABASE_NAME;
+		} else {
+			DemoDbGetter.getDemoDb(new DemoDbConnectionDataSetter());
+		}
 
 	}
 
@@ -183,9 +194,11 @@ public class SessionTest {
 
 	@Test
 	public void should_throw_when_parameters_are_incorrect() throws Exception {
-		mockLoginWrongUsername();
-		mockLoginWrongPassword();
-		mockLoginWrongDb();
+		if (isUsingMockServer()) {
+			mockLoginWrongUsername();
+			mockLoginWrongPassword();
+			mockLoginWrongDb();
+		}
 
 		Session badSession = new Session(RPCProtocol.RPC_HTTPS, host, port, databaseName, WRONG_USERNAME, password);
 		Throwable thrown = catchThrowable(() -> badSession.startSession());
@@ -233,22 +246,38 @@ public class SessionTest {
 		// to collect all failing assertions in one go
 		SoftAssertions softly = new SoftAssertions();
 
-		mockAllowedDatabaseListing();
-		try {
-			ArrayList<String> databaseList = session.getDatabaseList(host, port);
-			softly.assertThat(databaseList).as("List of databases on server " + host).contains(MOCK_DATABASE_NAME);
-		} catch (XmlRpcException e) {
-			softly.assertThat(e).as("Database listing allowed, no exception should have been throwed").isNull();
+		if (isUsingMockServer()) {
+			mockAllowedDatabaseListing();
 		}
 
-		mockServer.reset();
-		mockDeniedDatabaseListing();
-		Throwable thrown = catchThrowable(() -> session.getDatabaseList(host, port));
+		try {
+			ArrayList<String> databaseList = Session.getDatabaseList(protocol, host, port);
+			softly.assertThat(databaseList).as("List of databases on server " + host).contains(databaseName);
+		} catch (XmlRpcException e) {
+			if (isUsingMockServer()) {
+				softly.assertThat(e).as("Database listing allowed, no exception should have been throwed").isNull();
+			} else {
+				// Listing is denied on demo server
+				softly.assertThat(e).as("XmlRpcException thrown when access is denied")
+						.isInstanceOf(XmlRpcException.class).hasMessage("Access denied");
+			}
+		}
+
+		if (isUsingMockServer()) {
+			mockServer.reset();
+			mockDeniedDatabaseListing();
+		}
+
+		Throwable thrown = catchThrowable(() -> Session.getDatabaseList(protocol, host, port));
 		softly.assertThat(thrown).as("XmlRpcException thrown when access is denied").isInstanceOf(XmlRpcException.class)
 				.hasMessage("Access denied");
 
 		// Don't forget to call SoftAssertions global verification !
 		softly.assertAll();
+	}
+
+	private static boolean isUsingMockServer() {
+		return useMockServer;
 	}
 
 	@Test
@@ -258,25 +287,36 @@ public class SessionTest {
 		SoftAssertions softly = new SoftAssertions();
 
 		// Listing denied
-		mockDeniedDatabaseListing();
+		if (isUsingMockServer()) {
+			mockDeniedDatabaseListing();
+		}
+
 		Throwable thrown = catchThrowable(() -> session.checkDatabasePresence());
 		softly.assertThat(thrown).as("Exception thrown when db listing disabled").isInstanceOf(Exception.class)
 				.hasMessage("Access denied");
 
-		// Listing allowed and db found
-		mockServer.reset();
-		mockAllowedDatabaseListing();
-		thrown = catchThrowable(() -> session.checkDatabasePresence());
-		softly.assertThat(thrown).as("Exception thrown when db listing enabled and db should be found").isNull();
+		// Listing not allowed on demo server
+		if (isUsingMockServer()) {
 
-		// Listing allowed and db not found
-		session = new Session(protocol, host, port, WRONG_DB, userName, password);
-		thrown = catchThrowable(() -> session.checkDatabasePresence());
-		softly.assertThat(thrown).as("Exception thrown when db listing disabled").isInstanceOf(Exception.class)
-				.hasMessage("Error while connecting to Odoo.  Database [" + WRONG_DB
-						+ "]  was not found in the following list: " + System.getProperty("line.separator")
-						+ System.getProperty("line.separator") + MOCK_DATABASE_NAME
-						+ System.getProperty("line.separator"));
+			// Listing allowed and db found
+			mockServer.reset();
+			mockAllowedDatabaseListing();
+
+			thrown = catchThrowable(() -> session.checkDatabasePresence());
+
+			softly.assertThat(thrown).as("Exception thrown when db listing enabled and db should be found").isNull();
+
+			// Listing allowed and db not found
+			session = new Session(protocol, host, port, WRONG_DB, userName, password);
+			thrown = catchThrowable(() -> session.checkDatabasePresence());
+			softly.assertThat(thrown).as("Exception thrown when db listing enabled but db not found")
+					.isInstanceOf(Exception.class)
+					.hasMessage("Error while connecting to Odoo.  Database [" + WRONG_DB
+							+ "]  was not found in the following list: " + System.getProperty("line.separator")
+							+ System.getProperty("line.separator") + MOCK_DATABASE_NAME
+							+ System.getProperty("line.separator"));
+
+		}
 
 		// Don't forget to call SoftAssertions global verification !
 		softly.assertAll();
@@ -284,7 +324,9 @@ public class SessionTest {
 
 	@Test
 	public void should_return_server_version() throws Exception {
-		mockServerVersionResponse();
+		if (isUsingMockServer()) {
+			mockServerVersionResponse();
+		}
 		Version version = session.getServerVersion();
 		assertThat(version).as("Server version").isNotNull();
 
@@ -325,51 +367,72 @@ public class SessionTest {
 	@Test
 	public void should_send_given_parameters() throws Exception {
 		// Check parameters given are sent in order
-		mockServer
-				.when(request().withMethod("POST").withPath("/xmlrpc/2/object")
-						.withBody(new RegexBody(".*objectName.*commandName.*")))
-				.respond(response().withStatusCode(200).withBody(
-						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><int>1</int></value>\n</param>\n</params>\n</methodResponse>\n"));
-		Object[] parameters = new Object[] { "parameter1", "parameter2" };
-		session.executeCommand("objectName", "commandName", parameters);
-		mockServer.verify(request().withBody(new RegexBody(".*parameter1.*parameter2.*")), VerificationTimes.once());
+		if (isUsingMockServer()) {
+			mockServer
+					.when(request().withMethod("POST").withPath("/xmlrpc/2/object")
+							.withBody(new RegexBody(".*res.users.*context_get.*")))
+					.respond(response().withStatusCode(200).withBody(
+							"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><int>1</int></value>\n</param>\n</params>\n</methodResponse>\n"));
+		} else {
+			session.startSession();
+		}
+		Object[] parameters = new Object[] { "parameter1" };
+		session.executeCommand("res.users", "context_get", parameters);
+		if (isUsingMockServer()) {
+			mockServer.verify(request().withBody(new RegexBody(".*parameter1.*")), VerificationTimes.once());
+		}
 
 		// Check empty array is working
 		parameters = new Object[] {};
-		session.executeCommand("objectName", "commandName", parameters);
-		mockServer.verify(request().withBody(new RegexBody(".*objectName.*commandName.*")),
-				VerificationTimes.exactly(2));
+		session.executeCommand("res.users", "context_get", parameters);
+		if (isUsingMockServer()) {
+			mockServer.verify(request().withBody(new RegexBody(".*res.users.*context_get.*")),
+					VerificationTimes.exactly(2));
+		}
 
 		// Check null is working
 		parameters = null;
-		session.executeCommand("objectName", "commandName", parameters);
-		mockServer.verify(request().withBody(new RegexBody(".*objectName.*commandName.*")),
-				VerificationTimes.exactly(3));
-
+		session.executeCommand("res.users", "context_get", parameters);
+		if (isUsingMockServer()) {
+			mockServer.verify(request().withBody(new RegexBody(".*res.users.*context_get.*")),
+					VerificationTimes.exactly(3));
+		}
 	}
 
 	@Test
 	public void should_call_method_execute_on_executeCommand() throws Exception {
-		mockServer
-				.when(request().withPath("/xmlrpc/2/object")
-						.withBody(RegexBody.regex(".*<methodName>execute</methodName>.*")))
-				.respond(response().withStatusCode(200).withBody(
-						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><int>1</int></value>\n</param>\n</params>\n</methodResponse>\n"));
-		session.executeCommand("objectName", "commandName", null);
-		mockServer.verify(request().withBody(new RegexBody(".*<methodName>execute</methodName>.*")),
-				VerificationTimes.once());
+		if (isUsingMockServer()) {
+			mockServer
+					.when(request().withPath("/xmlrpc/2/object")
+							.withBody(RegexBody.regex(".*<methodName>execute</methodName>.*")))
+					.respond(response().withStatusCode(200).withBody(
+							"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><int>1</int></value>\n</param>\n</params>\n</methodResponse>\n"));
+		} else {
+			session.startSession();
+		}
+		session.executeCommand("res.users", "context_get", null);
+		if (isUsingMockServer()) {
+			mockServer.verify(request().withBody(new RegexBody(".*<methodName>execute</methodName>.*")),
+					VerificationTimes.once());
+		}
 	}
 
 	@Test
 	public void should_call_method_exec_workflow_on_executeCommand() throws Exception {
-		mockServer
-				.when(request().withPath("/xmlrpc/2/object")
-						.withBody(RegexBody.regex(".*<methodName>exec_workflow</methodName>.*")))
-				.respond(response().withStatusCode(200).withBody(
-						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><int>1</int></value>\n</param>\n</params>\n</methodResponse>\n"));
-		session.executeWorkflow("objectName", "commandName", 42424242);
-		mockServer.verify(request().withBody(new RegexBody(".*<methodName>exec_workflow</methodName>.*")),
-				VerificationTimes.once());
+		if (isUsingMockServer()) {
+			mockServer
+					.when(request().withPath("/xmlrpc/2/object")
+							.withBody(RegexBody.regex(".*<methodName>exec_workflow</methodName>.*")))
+					.respond(response().withStatusCode(200).withBody(
+							"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><int>1</int></value>\n</param>\n</params>\n</methodResponse>\n"));
+		} else {
+			session.startSession();
+		}
+		session.executeWorkflow("account.invoice", "invoice_open", 42424242);
+		if (isUsingMockServer()) {
+			mockServer.verify(request().withBody(new RegexBody(".*<methodName>exec_workflow</methodName>.*")),
+					VerificationTimes.once());
+		}
 	}
 
 	@Test
@@ -384,39 +447,38 @@ public class SessionTest {
 		assertThat(protocolField.get(session)).isEqualTo(RPCProtocol.RPC_HTTP);
 	}
 
-	// /**
-	// * Only used to set the static data for connection on the main class
-	// */
-	// private static class DemoDbConnectionDataSetter implements
-	// DemoDbInfoRequester {
-	// @Override
-	// public void setProtocol(RPCProtocol protocol) {
-	// SessionTest.protocol = protocol;
-	// }
-	//
-	// @Override
-	// public void setHost(String host) {
-	// SessionTest.host = host;
-	// }
-	//
-	// @Override
-	// public void setPort(Integer port) {
-	// SessionTest.port = port;
-	// }
-	//
-	// @Override
-	// public void setDatabaseName(String databaseName) {
-	// SessionTest.databaseName = databaseName;
-	// }
-	//
-	// @Override
-	// public void setUserName(String userName) {
-	// SessionTest.userName = userName;
-	// }
-	//
-	// @Override
-	// public void setPassword(String password) {
-	// SessionTest.password = password;
-	// }
-	// }
+	/**
+	 * Only used to set the static data for connection on the main class
+	 */
+	private static class DemoDbConnectionDataSetter implements DemoDbInfoRequester {
+		@Override
+		public void setProtocol(RPCProtocol protocol) {
+			SessionTest.protocol = protocol;
+		}
+
+		@Override
+		public void setHost(String host) {
+			SessionTest.host = host;
+		}
+
+		@Override
+		public void setPort(Integer port) {
+			SessionTest.port = port;
+		}
+
+		@Override
+		public void setDatabaseName(String databaseName) {
+			SessionTest.databaseName = databaseName;
+		}
+
+		@Override
+		public void setUserName(String userName) {
+			SessionTest.userName = userName;
+		}
+
+		@Override
+		public void setPassword(String password) {
+			SessionTest.password = password;
+		}
+	}
 }

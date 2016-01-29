@@ -8,6 +8,7 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSocketFactory;
 
 import org.apache.xmlrpc.client.XmlRpcSun15HttpTransport;
 import org.apache.xmlrpc.client.XmlRpcSun15HttpTransportFactory;
@@ -59,7 +60,7 @@ public class OdooXmlRpcProxyTest {
 		if (httpsProxyPort != null) {
 			System.setProperty("https.proxyPort", httpsProxyPort);
 		} else {
-			System.clearProperty("https.proxyHost");
+			System.clearProperty("https.proxyPort");
 		}
 	}
 
@@ -91,30 +92,30 @@ public class OdooXmlRpcProxyTest {
 	public void should_use_no_proxy_if_none_available() throws Exception {
 		saveAndClearProperties();
 		try {
-		// Use SoftAssertions instead of direct assertThat methods
-		// to collect all failing assertions in one go
-		SoftAssertions softAssertions = new SoftAssertions();
+			// Use SoftAssertions instead of direct assertThat methods
+			// to collect all failing assertions in one go
+			SoftAssertions softAssertions = new SoftAssertions();
 
-		OdooXmlRpcProxy noProxy = new OdooXmlRpcProxy(RPCProtocol.RPC_HTTPS, host, port, service);
-		XmlRpcTransportFactory factory = noProxy.getTransportFactory();
-		if (factory != null && factory instanceof XmlRpcSun15HttpTransportFactory) {
-			XmlRpcSun15HttpTransportFactory xmlRpcSun15HttpTransportFactory = (XmlRpcSun15HttpTransportFactory) factory;
-			XmlRpcSun15HttpTransport transport = (XmlRpcSun15HttpTransport) xmlRpcSun15HttpTransportFactory
-					.getTransport();
-			softAssertions.assertThat(transport.getProxy()).as("No proxy").isNull();
-		}
+			OdooXmlRpcProxy noProxy = new OdooXmlRpcProxy(RPCProtocol.RPC_HTTPS, host, port, service);
+			XmlRpcTransportFactory factory = noProxy.getTransportFactory();
+			if (factory != null && factory instanceof XmlRpcSun15HttpTransportFactory) {
+				XmlRpcSun15HttpTransportFactory xmlRpcSun15HttpTransportFactory = (XmlRpcSun15HttpTransportFactory) factory;
+				XmlRpcSun15HttpTransport transport = (XmlRpcSun15HttpTransport) xmlRpcSun15HttpTransportFactory
+						.getTransport();
+				softAssertions.assertThat(transport.getProxy()).as("No proxy").isNull();
+			}
 
-		noProxy = new OdooXmlRpcProxy(RPCProtocol.RPC_HTTP, host, port, service);
-		factory = noProxy.getTransportFactory();
-		if (factory != null && factory instanceof XmlRpcSun15HttpTransportFactory) {
-			XmlRpcSun15HttpTransportFactory xmlRpcSun15HttpTransportFactory = (XmlRpcSun15HttpTransportFactory) factory;
-			XmlRpcSun15HttpTransport transport = (XmlRpcSun15HttpTransport) xmlRpcSun15HttpTransportFactory
-					.getTransport();
-			softAssertions.assertThat(transport.getProxy()).as("No proxy").isNull();
-		}
+			noProxy = new OdooXmlRpcProxy(RPCProtocol.RPC_HTTP, host, port, service);
+			factory = noProxy.getTransportFactory();
+			if (factory != null && factory instanceof XmlRpcSun15HttpTransportFactory) {
+				XmlRpcSun15HttpTransportFactory xmlRpcSun15HttpTransportFactory = (XmlRpcSun15HttpTransportFactory) factory;
+				XmlRpcSun15HttpTransport transport = (XmlRpcSun15HttpTransport) xmlRpcSun15HttpTransportFactory
+						.getTransport();
+				softAssertions.assertThat(transport.getProxy()).as("No proxy").isNull();
+			}
 
-		// Don't forget to call SoftAssertions global verification !
-		softAssertions.assertAll();
+			// Don't forget to call SoftAssertions global verification !
+			softAssertions.assertAll();
 		} finally {
 			restoreProperties();
 		}
@@ -124,39 +125,38 @@ public class OdooXmlRpcProxyTest {
 	public void should_use_https_proxy_for_https_when_available_http_proxy_otherwise() throws Exception {
 		saveAndClearProperties();
 		try {
-		// Use SoftAssertions instead of direct assertThat methods
-		// to collect all failing assertions in one go
-		SoftAssertions softAssertions = new SoftAssertions();
+			// Use SoftAssertions instead of direct assertThat methods
+			// to collect all failing assertions in one go
+			SoftAssertions softAssertions = new SoftAssertions();
 
-		setHttpProperties(MOCK_HTTP_PROXY_HOST, MOCK_HTTP_PROXY_PORT);
+			setHttpProperties(MOCK_HTTP_PROXY_HOST, MOCK_HTTP_PROXY_PORT);
 
-		OdooXmlRpcProxy usingHttpProxy = new OdooXmlRpcProxy(RPCProtocol.RPC_HTTPS, host,
-				port, service);
-		XmlRpcTransportFactory factory = usingHttpProxy.getTransportFactory();
-		if (factory != null && factory instanceof XmlRpcSun15HttpTransportFactory) {
-			XmlRpcSun15HttpTransportFactory xmlRpcSun15HttpTransportFactory = (XmlRpcSun15HttpTransportFactory) factory;
-			XmlRpcSun15HttpTransport transport = (XmlRpcSun15HttpTransport) xmlRpcSun15HttpTransportFactory
-					.getTransport();
-			Proxy proxy = new Proxy(Proxy.Type.HTTP,
-					new InetSocketAddress(MOCK_HTTP_PROXY_HOST, Integer.parseInt(MOCK_HTTP_PROXY_PORT, 10)));
-			softAssertions.assertThat(transport.getProxy()).as("Mock proxy for http").isEqualTo(proxy);
-		}
+			OdooXmlRpcProxy usingHttpProxy = new OdooXmlRpcProxy(RPCProtocol.RPC_HTTPS, host, port, service);
+			XmlRpcTransportFactory factory = usingHttpProxy.getTransportFactory();
+			if (factory != null && factory instanceof XmlRpcSun15HttpTransportFactory) {
+				XmlRpcSun15HttpTransportFactory xmlRpcSun15HttpTransportFactory = (XmlRpcSun15HttpTransportFactory) factory;
+				XmlRpcSun15HttpTransport transport = (XmlRpcSun15HttpTransport) xmlRpcSun15HttpTransportFactory
+						.getTransport();
+				Proxy proxy = new Proxy(Proxy.Type.HTTP,
+						new InetSocketAddress(MOCK_HTTP_PROXY_HOST, Integer.parseInt(MOCK_HTTP_PROXY_PORT, 10)));
+				softAssertions.assertThat(transport.getProxy()).as("Mock proxy for http").isEqualTo(proxy);
+			}
 
-		setHttpsProperties(MOCK_HTTPS_PROXY_HOST, MOCK_HTTPS_PROXY_PORT);
+			setHttpsProperties(MOCK_HTTPS_PROXY_HOST, MOCK_HTTPS_PROXY_PORT);
 
-		OdooXmlRpcProxy usingHttpsProxy = new OdooXmlRpcProxy(RPCProtocol.RPC_HTTPS, host, port, service);
-		factory = usingHttpsProxy.getTransportFactory();
-		if (factory != null && factory instanceof XmlRpcSun15HttpTransportFactory) {
-			XmlRpcSun15HttpTransportFactory xmlRpcSun15HttpTransportFactory = (XmlRpcSun15HttpTransportFactory) factory;
-			XmlRpcSun15HttpTransport transport = (XmlRpcSun15HttpTransport) xmlRpcSun15HttpTransportFactory
-					.getTransport();
-			Proxy proxy = new Proxy(Proxy.Type.HTTP,
-					new InetSocketAddress(MOCK_HTTPS_PROXY_HOST, Integer.parseInt(MOCK_HTTPS_PROXY_PORT, 10)));
-			softAssertions.assertThat(transport.getProxy()).as("Mock proxy for https").isEqualTo(proxy);
-		}
+			OdooXmlRpcProxy usingHttpsProxy = new OdooXmlRpcProxy(RPCProtocol.RPC_HTTPS, host, port, service);
+			factory = usingHttpsProxy.getTransportFactory();
+			if (factory != null && factory instanceof XmlRpcSun15HttpTransportFactory) {
+				XmlRpcSun15HttpTransportFactory xmlRpcSun15HttpTransportFactory = (XmlRpcSun15HttpTransportFactory) factory;
+				XmlRpcSun15HttpTransport transport = (XmlRpcSun15HttpTransport) xmlRpcSun15HttpTransportFactory
+						.getTransport();
+				Proxy proxy = new Proxy(Proxy.Type.HTTP,
+						new InetSocketAddress(MOCK_HTTPS_PROXY_HOST, Integer.parseInt(MOCK_HTTPS_PROXY_PORT, 10)));
+				softAssertions.assertThat(transport.getProxy()).as("Mock proxy for https").isEqualTo(proxy);
+			}
 
-		// Don't forget to call SoftAssertions global verification !
-		softAssertions.assertAll();
+			// Don't forget to call SoftAssertions global verification !
+			softAssertions.assertAll();
 		} finally {
 			restoreProperties();
 		}
@@ -166,36 +166,36 @@ public class OdooXmlRpcProxyTest {
 	public void should_use_http_proxy_for_http_when_available_nothing_else() throws Exception {
 		saveAndClearProperties();
 		try {
-		// Use SoftAssertions instead of direct assertThat methods
-		// to collect all failing assertions in one go
-		SoftAssertions softAssertions = new SoftAssertions();
+			// Use SoftAssertions instead of direct assertThat methods
+			// to collect all failing assertions in one go
+			SoftAssertions softAssertions = new SoftAssertions();
 
-		setHttpsProperties(MOCK_HTTPS_PROXY_HOST, MOCK_HTTPS_PROXY_PORT);
+			setHttpsProperties(MOCK_HTTPS_PROXY_HOST, MOCK_HTTPS_PROXY_PORT);
 
-		OdooXmlRpcProxy usingHttpsProxy = new OdooXmlRpcProxy(RPCProtocol.RPC_HTTP, host, port, service);
-		XmlRpcTransportFactory factory = usingHttpsProxy.getTransportFactory();
-		if (factory != null && factory instanceof XmlRpcSun15HttpTransportFactory) {
-			XmlRpcSun15HttpTransportFactory xmlRpcSun15HttpTransportFactory = (XmlRpcSun15HttpTransportFactory) factory;
-			XmlRpcSun15HttpTransport transport = (XmlRpcSun15HttpTransport) xmlRpcSun15HttpTransportFactory
-					.getTransport();
-			softAssertions.assertThat(transport.getProxy()).as("No proxy").isNull();
-		}
+			OdooXmlRpcProxy usingHttpsProxy = new OdooXmlRpcProxy(RPCProtocol.RPC_HTTP, host, port, service);
+			XmlRpcTransportFactory factory = usingHttpsProxy.getTransportFactory();
+			if (factory != null && factory instanceof XmlRpcSun15HttpTransportFactory) {
+				XmlRpcSun15HttpTransportFactory xmlRpcSun15HttpTransportFactory = (XmlRpcSun15HttpTransportFactory) factory;
+				XmlRpcSun15HttpTransport transport = (XmlRpcSun15HttpTransport) xmlRpcSun15HttpTransportFactory
+						.getTransport();
+				softAssertions.assertThat(transport.getProxy()).as("No proxy").isNull();
+			}
 
-		setHttpProperties(MOCK_HTTP_PROXY_HOST, MOCK_HTTP_PROXY_PORT);
+			setHttpProperties(MOCK_HTTP_PROXY_HOST, MOCK_HTTP_PROXY_PORT);
 
-		OdooXmlRpcProxy usingHttpProxy = new OdooXmlRpcProxy(RPCProtocol.RPC_HTTP, host, port, service);
-		factory = usingHttpProxy.getTransportFactory();
-		if (factory != null && factory instanceof XmlRpcSun15HttpTransportFactory) {
-			XmlRpcSun15HttpTransportFactory xmlRpcSun15HttpTransportFactory = (XmlRpcSun15HttpTransportFactory) factory;
-			XmlRpcSun15HttpTransport transport = (XmlRpcSun15HttpTransport) xmlRpcSun15HttpTransportFactory
-					.getTransport();
-			Proxy proxy = new Proxy(Proxy.Type.HTTP,
-					new InetSocketAddress(MOCK_HTTP_PROXY_HOST, Integer.parseInt(MOCK_HTTP_PROXY_PORT, 10)));
-			softAssertions.assertThat(transport.getProxy()).as("Mock proxy for http").isEqualTo(proxy);
-		}
+			OdooXmlRpcProxy usingHttpProxy = new OdooXmlRpcProxy(RPCProtocol.RPC_HTTP, host, port, service);
+			factory = usingHttpProxy.getTransportFactory();
+			if (factory != null && factory instanceof XmlRpcSun15HttpTransportFactory) {
+				XmlRpcSun15HttpTransportFactory xmlRpcSun15HttpTransportFactory = (XmlRpcSun15HttpTransportFactory) factory;
+				XmlRpcSun15HttpTransport transport = (XmlRpcSun15HttpTransport) xmlRpcSun15HttpTransportFactory
+						.getTransport();
+				Proxy proxy = new Proxy(Proxy.Type.HTTP,
+						new InetSocketAddress(MOCK_HTTP_PROXY_HOST, Integer.parseInt(MOCK_HTTP_PROXY_PORT, 10)));
+				softAssertions.assertThat(transport.getProxy()).as("Mock proxy for http").isEqualTo(proxy);
+			}
 
-		// Don't forget to call SoftAssertions global verification !
-		softAssertions.assertAll();
+			// Don't forget to call SoftAssertions global verification !
+			softAssertions.assertAll();
 		} finally {
 			restoreProperties();
 		}
@@ -204,17 +204,27 @@ public class OdooXmlRpcProxyTest {
 	@Test
 	public void should_return_server_version() throws Exception {
 		// Make sure SSL works by adding MockServer CA certificate to context
+		SSLSocketFactory previousFactory = HttpsURLConnection.getDefaultSSLSocketFactory();
 		HttpsURLConnection.setDefaultSSLSocketFactory(SSLFactory.getInstance().sslContext().getSocketFactory());
-
 		ClientAndServer mockServer = ClientAndServer.startClientAndServer(port);
-		mockServer
-				.when(request().withMethod("POST").withPath("/xmlrpc/2/db")
-						.withBody(new StringBody(
-								"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>server_version</methodName><params/></methodCall>")))
-				.respond(response().withStatusCode(200).withBody(
-						"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><string>9.0e</string></value>\n</param>\n</params>\n</methodResponse>\n"));
-		Version version = OdooXmlRpcProxy.getServerVersion(RPCProtocol.RPC_HTTPS, host, port);
-		assertThat(version).as("Server version").isNotNull();
+		try {
+			// Given: the server expects a request of its version
+			mockServer
+					.when(request().withMethod("POST").withPath("/xmlrpc/2/db")
+							.withBody(new StringBody(
+									"<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall><methodName>server_version</methodName><params/></methodCall>")))
+					.respond(response().withStatusCode(200).withBody(
+							"<?xml version='1.0'?>\n<methodResponse>\n<params>\n<param>\n<value><string>9.0e</string></value>\n</param>\n</params>\n</methodResponse>\n"));
+
+			// When: Server version is requested
+			Version version = OdooXmlRpcProxy.getServerVersion(RPCProtocol.RPC_HTTPS, host, port);
+
+			// Then: the server version is returned
+			assertThat(version).as("Server version").isNotNull().hasToString("9.0e");
+		} finally {
+			mockServer.stop();
+			HttpsURLConnection.setDefaultSSLSocketFactory(previousFactory);
+		}
 
 	}
 }
