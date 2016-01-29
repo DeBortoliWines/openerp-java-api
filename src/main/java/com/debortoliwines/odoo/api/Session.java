@@ -206,7 +206,7 @@ public class Session {
 	 * @return A list of databases available for the Odoo instance
 	 * @throws XmlRpcException
 	 */
-	public ArrayList<String> getDatabaseList (String host, int port) throws XmlRpcException
+	public static ArrayList<String> getDatabaseList(String host, int port) throws XmlRpcException
 	{
 		return getDatabaseList(RPCProtocol.RPC_HTTP, host, port);
 	}
