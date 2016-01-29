@@ -41,7 +41,7 @@ import com.debortoliwines.odoo.api.helpers.FilterHelper;
 public class ObjectAdapter {
 
 	private final String objectName;
-	private final OpenERPCommand commands;
+	private final OpenERPCommand command;
 	private final FieldCollection allFields;
 	private final Version server_version;
 
@@ -72,38 +72,38 @@ public class ObjectAdapter {
 	 * @throws OpeneERPApiException
 	 */
 	public ObjectAdapter(Session session, String objectName) throws XmlRpcException, OpeneERPApiException {
-		this.commands = session.getOdooCommand();
+		this.command = new OpenERPCommand(session);
 		this.objectName = objectName;
 		this.server_version = session.getServerVersion();
 
-		objectExists(this.commands, this.objectName);
+		validateModelExists(this.objectName);
 
 		allFields = this.getFields();
 	}
 
 	/**
 	 * Validates a model name against entries in ir.model The function is
-	 * synchronized to make use of a global (static) list of objects to increase
-	 * speed
+	 * synchronized to make use of a global (static) list of model names to
+	 * increase speed
 	 * 
-	 * @param commands
+	 * @param command
 	 *            Command object to use
-	 * @param objectName
-	 *            Object name that needs to be validated
+	 * @param modelName
+	 *            Model name that needs to be validated
 	 * @throws OpeneERPApiException
 	 *             If the model could not be validated
 	 */
 	@SuppressWarnings("unchecked")
-	private synchronized static void objectExists(OpenERPCommand commands, String objectName)
+	private synchronized void validateModelExists(String modelName)
 			throws OpeneERPApiException {
 		// If you can't find the object name, reload the cache. Somebody may
 		// have added a new module after the cache was created
 		// Ticket #1 from sourceforge
-		if (objectNameCache.indexOf(objectName) < 0) {
+		if (objectNameCache.indexOf(modelName) < 0) {
 			objectNameCache.clear();
 			try {
-				Object[] ids = commands.searchObject("ir.model", new Object[] {});
-				Object[] result = commands.readObject("ir.model", ids, new String[] { "model" });
+				Object[] ids = command.searchObject("ir.model", new Object[] {});
+				Object[] result = command.readObject("ir.model", ids, new String[] { "model" });
 				for (Object row : result) {
 					objectNameCache.add(((HashMap<String, Object>) row).get("model").toString());
 				}
@@ -112,8 +112,8 @@ public class ObjectAdapter {
 			}
 		}
 
-		if (objectNameCache.indexOf(objectName) < 0)
-			throw new OpeneERPApiException("Could not find model with name '" + objectName + "'");
+		if (objectNameCache.indexOf(modelName) < 0)
+			throw new OpeneERPApiException("Could not find model with name '" + modelName + "'");
 	}
 
 	@SuppressWarnings("unchecked")
@@ -208,7 +208,7 @@ public class ObjectAdapter {
 			}
 		}
 
-		Object[] results = commands.readObject(objectName, ids, fields);
+		Object[] results = command.readObject(objectName, ids, fields);
 
 		/****
 		 * 18/04/2012 - PvdM Maybe reconsider this piece of code for later. Does
@@ -269,7 +269,7 @@ public class ObjectAdapter {
 	public FieldCollection getFields(String[] filterFields) throws XmlRpcException {
 		FieldCollection collection = new FieldCollection();
 
-		HashMap<String, Object> fields = commands.getFields(objectName, filterFields);
+		HashMap<String, Object> fields = command.getFields(objectName, filterFields);
 
 		for (String fieldName : fields.keySet()) {
 			HashMap<String, Object> fieldDetails = (HashMap<String, Object>) fields.get(fieldName);
@@ -481,8 +481,8 @@ public class ObjectAdapter {
 				HashMap<String, String> idToName = null;
 				if (!modelNameCache.containsKey(fld.getRelation())) {
 					idToName = new HashMap<String, String>();
-					Object[] ids = commands.searchObject(fld.getRelation(), new Object[] {});
-					Object[] names = commands.nameGet(fld.getRelation(), ids);
+					Object[] ids = command.searchObject(fld.getRelation(), new Object[] {});
+					Object[] names = command.nameGet(fld.getRelation(), ids);
 					for (int j = 0; j < ids.length; j++) {
 						Object[] nameValue = (Object[]) names[j];
 						idToName.put(nameValue[0].toString(), nameValue[1].toString());
@@ -612,7 +612,7 @@ public class ObjectAdapter {
 				importRows = newImportRows;
 			}
 
-			HashMap<String, Object> results = commands.Load(objectName, targetFieldList, importRows);
+			HashMap<String, Object> results = command.Load(objectName, targetFieldList, importRows);
 
 			// There was an error. ids is false and not an Object[]
 			if (results.get("ids") instanceof Boolean) {
@@ -634,7 +634,7 @@ public class ObjectAdapter {
 				row.put("id", ids[i]);
 			}
 		} else { // Use older import rows function
-			Object[] result = commands.importData(objectName, targetFieldList, importRows);
+			Object[] result = command.importData(objectName, targetFieldList, importRows);
 
 			// Should return the number of rows committed. If there was an
 			// error, it returns -1
@@ -657,7 +657,7 @@ public class ObjectAdapter {
 	 */
 	public int getObjectCount(FilterCollection filter) throws XmlRpcException, OpeneERPApiException {
 		Object[] preparedFilters = validateFilters(filter);
-		return Integer.parseInt(commands.searchObject(objectName, preparedFilters, -1, -1, null, true).toString());
+		return Integer.parseInt(command.searchObject(objectName, preparedFilters, -1, -1, null, true).toString());
 	}
 
 	/***
@@ -702,7 +702,7 @@ public class ObjectAdapter {
 
 		String[] fieldArray = (fields == null ? new String[] {} : fields);
 		Object[] preparedFilters = validateFilters(filter);
-		Object[] idList = (Object[]) commands.searchObject(objectName, preparedFilters, offset, limit, order, false);
+		Object[] idList = (Object[]) command.searchObject(objectName, preparedFilters, offset, limit, order, false);
 
 		return readObject(idList, fieldArray);
 
@@ -797,7 +797,7 @@ public class ObjectAdapter {
 		if (valueList.size() == 0)
 			return false;
 
-		boolean success = commands.writeObject(objectName, id, valueList);
+		boolean success = command.writeObject(objectName, id, valueList);
 
 		if (success)
 			row.changesApplied();
@@ -824,7 +824,7 @@ public class ObjectAdapter {
 		if (valueList.size() == 0)
 			throw new OpeneERPApiException("Row doesn't have any fields to update");
 
-		Object id = commands.createObject(objectName, valueList);
+		Object id = command.createObject(objectName, valueList);
 
 		row.put("id", id);
 		row.changesApplied();
@@ -847,7 +847,7 @@ public class ObjectAdapter {
 	@SuppressWarnings("unchecked")
 	public FieldCollection callFieldsFunction(String functionName, Object[] parameters)
 			throws XmlRpcException, OpeneERPApiException {
-		Object[] results = commands.callObjectFunction(objectName, functionName, parameters);
+		Object[] results = command.callObjectFunction(objectName, functionName, parameters);
 
 		// Go through the first row and fetch the fields
 		FieldCollection fieldCol = new FieldCollection();
@@ -913,7 +913,7 @@ public class ObjectAdapter {
 	 */
 	public RowCollection callFunction(String functionName, Object[] parameters, FieldCollection fieldCol)
 			throws XmlRpcException, OpeneERPApiException {
-		Object[] results = commands.callObjectFunction(objectName, functionName, parameters);
+		Object[] results = command.callObjectFunction(objectName, functionName, parameters);
 
 		if (fieldCol == null)
 			fieldCol = callFieldsFunction(functionName, parameters);
@@ -936,9 +936,9 @@ public class ObjectAdapter {
 	 * @throws OpeneERPApiException
 	 */
 	public void executeWorkflow(Row row, String signal) throws XmlRpcException, OpeneERPApiException {
-		ObjectAdapter.signalExists(this.commands, this.objectName, signal);
+		ObjectAdapter.signalExists(this.command, this.objectName, signal);
 
-		commands.executeWorkflow(this.objectName, signal, row.getID());
+		command.executeWorkflow(this.objectName, signal, row.getID());
 	}
 
 	/**
@@ -956,7 +956,7 @@ public class ObjectAdapter {
 			ids[i] = rows.get(i).getID();
 		}
 
-		return this.commands.unlinkObject(this.objectName, ids);
+		return this.command.unlinkObject(this.objectName, ids);
 	}
 
 	/**

@@ -93,16 +93,6 @@ public class Session {
 	}
 	
 	/**
-	 * Returns an initialized OdooCommand object for ease of reference. A
-	 * OdooCommand provides basic calls to the server
-	 * 
-	 * @return
-	 */
-	public OpenERPCommand getOdooCommand() {
-		return new OpenERPCommand(this);
-	}
-	
-	/**
 	 * Returns an initialized ObjectAdapter object for ease of reference.
 	 * A ObjectAdapter object does type conversions and error checking before making a call to the server
 	 * @return
