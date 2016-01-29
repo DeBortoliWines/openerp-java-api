@@ -1,7 +1,7 @@
 /*
  *   Copyright 2011, 2014 De Bortoli Wines Pty Limited (Australia)
  *
- *   This file is part of OpenERPJavaAPI.
+ *   This file is part of OdooJavaAPI.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -32,8 +32,8 @@ import com.debortoliwines.odoo.api.helpers.FilterHelper;
 
 /**
  * Main class for communicating with the server. It provides extra validation
- * for making calls to the OpenERP server. It converts data types, validates
- * model names, validates filters, checks for nulls etc.
+ * for making calls to the Odoo server. It converts data types, validates model
+ * names, validates filters, checks for nulls etc.
  * 
  * @author Pieter van der Merwe
  *
@@ -185,14 +185,14 @@ public class ObjectAdapter {
 	}
 
 	/**
-	 * Reads objects from the OpenERP server if you already have the ID's. If
-	 * you don't, use searchAndRead with filters.
+	 * Reads objects from the Odoo server if you already have the ID's. If you
+	 * don't, use searchAndRead with filters.
 	 * 
 	 * @param ids
 	 *            List of ids to fetch objects for
 	 * @param fields
 	 *            List of fields to fetch data for
-	 * @return A collection of rows for an OpenERP object
+	 * @return A collection of rows for an Odoo object
 	 * @throws XmlRpcException
 	 * @throws OpeneERPApiException
 	 */
@@ -214,7 +214,7 @@ public class ObjectAdapter {
 		 * 18/04/2012 - PvdM Maybe reconsider this piece of code for later. Does
 		 * it matter if it isn't sorted by ID?
 		 * 
-		 * // OpenERP doesn't use the sorting you pass (specified in the search
+		 * // Odoo doesn't use the sorting you pass (specified in the search
 		 * function to get a sorted list of IDs). // When they fix it, remove
 		 * this section of code ArrayList<Integer> idList = new ArrayList
 		 * <Integer>(); for (Object id : ids){
@@ -232,7 +232,7 @@ public class ObjectAdapter {
 	}
 
 	/***
-	 * Fetches field information for the current OpenERP object this adapter is
+	 * Fetches field information for the current Odoo object this adapter is
 	 * linked to
 	 * 
 	 * @return FieldCollecton data for all fields of the object
@@ -243,8 +243,7 @@ public class ObjectAdapter {
 	}
 
 	/***
-	 * Fetches field names for the current OpenERP object this adapter is linked
-	 * to
+	 * Fetches field names for the current Odoo object this adapter is linked to
 	 * 
 	 * @return Array of field names
 	 * @throws XmlRpcException
@@ -258,7 +257,7 @@ public class ObjectAdapter {
 	}
 
 	/***
-	 * Fetches field information for the current OpenERP object this adapter is
+	 * Fetches field information for the current Odoo object this adapter is
 	 * linked to
 	 * 
 	 * @param filterFields
@@ -282,13 +281,13 @@ public class ObjectAdapter {
 
 	/**
 	 * Helper function to validate filter parameters and returns a filter object
-	 * suitable for the OpenERP search function by fixing data types and
-	 * converting values where appropriate.
+	 * suitable for the Odoo search function by fixing data types and converting
+	 * values where appropriate.
 	 * 
 	 * @param filters
 	 *            FilterCollection containing the specified filters
 	 * @return A validated filter Object[] correctly formatted for use by the
-	 *         OpenERP search function
+	 *         Odoo search function
 	 * @throws OpeneERPApiException
 	 */
 	public Object[] validateFilters(final FilterCollection filters) throws OpeneERPApiException {
@@ -315,20 +314,20 @@ public class ObjectAdapter {
 				if (operator.equals(FilterOperator.OR))
 					if (filters.getFilters().length <= i + 2)
 						throw new OpeneERPApiException(
-								"Logical operator OR needs two parameters.  Please read the OpenERP help.");
+								"Logical operator OR needs two parameters.  Please read the Odoo help.");
 
 				// NOT must have one parameter following
 				if (operator.equals(FilterOperator.NOT))
 					if (filters.getFilters().length <= i + 1)
 						throw new OpeneERPApiException(
-								"Logical operator NOT needs one parameter.  Please read the OpenERP help.");
+								"Logical operator NOT needs one parameter.  Please read the Odoo help.");
 
 				processedFilters.add(operator);
 				continue;
 			}
 
 			if (!(filter instanceof Object[]) && ((Object[]) filter).length != 3)
-				throw new OpeneERPApiException("Filters aren't in the correct format.  Please read the OpenERP help.");
+				throw new OpeneERPApiException("Filters aren't in the correct format.  Please read the Odoo help.");
 
 			String fieldName = ((Object[]) filter)[0].toString();
 			String comparison = ((Object[]) filter)[1].toString();
@@ -346,7 +345,7 @@ public class ObjectAdapter {
 			if (fld != null && fld.getFunc_method() == true)
 				throw new OpeneERPApiException("Can not search on function field " + fieldName);
 
-			// Fix the value type if required for the OpenERP server
+			// Fix the value type if required for the Odoo server
 			if (!fieldName.equals("id") && fld == null)
 				throw new OpeneERPApiException("Unknow filter field " + fieldName);
 			else if (comparison.equals("is null")) {
@@ -544,9 +543,9 @@ public class ObjectAdapter {
 	 * Calls the import_data or load function on the server to bulk
 	 * create/update records.
 	 * 
-	 * The import_data function will be called on OpenERP servers where the
-	 * version number is < 7. The import_data function does not return IDs and
-	 * therefore IDs will not be set on imported rows.
+	 * The import_data function will be called on Odoo servers where the version
+	 * number is < 7. The import_data function does not return IDs and therefore
+	 * IDs will not be set on imported rows.
 	 * 
 	 * The load function will be called for V7 and the IDs will be set on the
 	 * imported rows. The load function was introduced in V7 and the import_data
@@ -561,7 +560,7 @@ public class ObjectAdapter {
 	@SuppressWarnings("unchecked")
 	public boolean importData(RowCollection rows) throws OpeneERPApiException, XmlRpcException {
 
-		// Workaround. OpenERP7 bug where old and new rows can't be sent
+		// Workaround. Odoo7 bug where old and new rows can't be sent
 		// together using the import_data or load function
 		if (this.server_version.getMajor() >= 7 && this.server_version.getMinor() == 0) {
 			RowCollection newRows = new RowCollection();
@@ -594,7 +593,7 @@ public class ObjectAdapter {
 		// deprecated
 		if (this.server_version.getMajor() >= 7) {
 
-			// Workaround OpenERP V7 bug. Remove the .id field for new rows.
+			// Workaround Odoo V7 bug. Remove the .id field for new rows.
 			if (this.server_version.getMinor() == 0 && rows.size() > 0 && rows.get(0).getID() == 0) {
 				String[] newTargetFieldList = new String[targetFieldList.length - 1];
 				for (int i = 1; i < targetFieldList.length; i++) {
@@ -670,7 +669,7 @@ public class ObjectAdapter {
 	 *            applied
 	 * @param fields
 	 *            List of fields to return data for
-	 * @return A collection of rows for an OpenERP object
+	 * @return A collection of rows for an Odoo object
 	 * @throws XmlRpcException
 	 * @throws OpeneERPApiException
 	 */
@@ -694,7 +693,7 @@ public class ObjectAdapter {
 	 *            Maximum number of rows to return. -1 for no limit.
 	 * @param order
 	 *            Field name to order on
-	 * @return A collection of rows for an OpenERP object
+	 * @return A collection of rows for an Odoo object
 	 * @throws XmlRpcException
 	 * @throws OpeneERPApiException
 	 */
@@ -807,7 +806,7 @@ public class ObjectAdapter {
 	}
 
 	/**
-	 * Creates an Object on the OpenERP server by calling the create function on
+	 * Creates an Object on the Odoo server by calling the create function on
 	 * the server. The id column is set on the row after the object was
 	 * successfully created
 	 * 
@@ -834,7 +833,7 @@ public class ObjectAdapter {
 
 	/**
 	 * Calls any function on an object that returns a field collection. ie. a
-	 * row is retured as [{'name' : {'type' : 'char'}] The OpenERP function must
+	 * row is retured as [{'name' : {'type' : 'char'}] The Odoo function must
 	 * have the signature like (self, cr, uid, *param).
 	 * 
 	 * @param functionName
@@ -898,8 +897,8 @@ public class ObjectAdapter {
 
 	/**
 	 * Calls any function on an object. The first row is inspected to determine
-	 * data fields and data types The OpenERP function must have the signature
-	 * like (self, cr, uid, *param) and return a dictionary or object.
+	 * data fields and data types The Odoo function must have the signature like
+	 * (self, cr, uid, *param) and return a dictionary or object.
 	 * 
 	 * @param functionName
 	 *            function to call
@@ -943,7 +942,7 @@ public class ObjectAdapter {
 	}
 
 	/**
-	 * Deletes objects from the OpenERP Server
+	 * Deletes objects from the Odoo Server
 	 * 
 	 * @param rows
 	 *            Rows to delete
@@ -961,7 +960,7 @@ public class ObjectAdapter {
 	}
 
 	/**
-	 * Deletes objects from the OpenERP Server
+	 * Deletes objects from the Odoo Server
 	 * 
 	 * @param row
 	 *            Row to delete
