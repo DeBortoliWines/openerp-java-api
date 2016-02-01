@@ -40,7 +40,7 @@ import com.debortoliwines.odoo.api.helpers.FilterHelper;
  */
 public class ObjectAdapter {
 
-	private final String objectName;
+	private final String modelName;
 	private final OpenERPCommand command;
 	private final FieldCollection allFields;
 	private final Version server_version;
@@ -66,19 +66,24 @@ public class ObjectAdapter {
 	 * 
 	 * @param session
 	 *            Session object that will be used to make the calls
-	 * @param objectName
-	 *            Object name that this adapter will work for.
+	 * @param modelName
+	 *            Model name that this adapter will work for.
 	 * @throws XmlRpcException
 	 * @throws OpeneERPApiException
 	 */
-	public ObjectAdapter(Session session, String objectName) throws XmlRpcException, OpeneERPApiException {
-		this.command = new OpenERPCommand(session);
-		this.objectName = objectName;
-		this.server_version = session.getServerVersion();
+	public ObjectAdapter(Session session, String modelName) throws XmlRpcException, OpeneERPApiException {
+		this(new OpenERPCommand(session), modelName, session.getServerVersion());
+	}
 
-		validateModelExists(this.objectName);
+	ObjectAdapter(OpenERPCommand command, String modelName, Version serverVersion)
+			throws OpeneERPApiException, XmlRpcException {
+		this.command = command;
+		this.modelName = modelName;
+		this.server_version = serverVersion;
 
-		allFields = this.getFields();
+		validateModelExists();
+
+		allFields = getFields();
 	}
 
 	/**
@@ -88,13 +93,11 @@ public class ObjectAdapter {
 	 * 
 	 * @param command
 	 *            Command object to use
-	 * @param modelName
-	 *            Model name that needs to be validated
 	 * @throws OpeneERPApiException
 	 *             If the model could not be validated
 	 */
 	@SuppressWarnings("unchecked")
-	private synchronized void validateModelExists(String modelName)
+	synchronized void validateModelExists()
 			throws OpeneERPApiException {
 		// If you can't find the object name, reload the cache. Somebody may
 		// have added a new module after the cache was created
@@ -208,7 +211,7 @@ public class ObjectAdapter {
 			}
 		}
 
-		Object[] results = command.readObject(objectName, ids, fields);
+		Object[] results = command.readObject(modelName, ids, fields);
 
 		/****
 		 * 18/04/2012 - PvdM Maybe reconsider this piece of code for later. Does
@@ -269,7 +272,7 @@ public class ObjectAdapter {
 	public FieldCollection getFields(String[] filterFields) throws XmlRpcException {
 		FieldCollection collection = new FieldCollection();
 
-		HashMap<String, Object> fields = command.getFields(objectName, filterFields);
+		HashMap<String, Object> fields = command.getFields(modelName, filterFields);
 
 		for (String fieldName : fields.keySet()) {
 			HashMap<String, Object> fieldDetails = (HashMap<String, Object>) fields.get(fieldName);
@@ -612,7 +615,7 @@ public class ObjectAdapter {
 				importRows = newImportRows;
 			}
 
-			HashMap<String, Object> results = command.Load(objectName, targetFieldList, importRows);
+			HashMap<String, Object> results = command.Load(modelName, targetFieldList, importRows);
 
 			// There was an error. ids is false and not an Object[]
 			if (results.get("ids") instanceof Boolean) {
@@ -634,7 +637,7 @@ public class ObjectAdapter {
 				row.put("id", ids[i]);
 			}
 		} else { // Use older import rows function
-			Object[] result = command.importData(objectName, targetFieldList, importRows);
+			Object[] result = command.importData(modelName, targetFieldList, importRows);
 
 			// Should return the number of rows committed. If there was an
 			// error, it returns -1
@@ -657,7 +660,7 @@ public class ObjectAdapter {
 	 */
 	public int getObjectCount(FilterCollection filter) throws XmlRpcException, OpeneERPApiException {
 		Object[] preparedFilters = validateFilters(filter);
-		return Integer.parseInt(command.searchObject(objectName, preparedFilters, -1, -1, null, true).toString());
+		return Integer.parseInt(command.searchObject(modelName, preparedFilters, -1, -1, null, true).toString());
 	}
 
 	/***
@@ -702,7 +705,7 @@ public class ObjectAdapter {
 
 		String[] fieldArray = (fields == null ? new String[] {} : fields);
 		Object[] preparedFilters = validateFilters(filter);
-		Object[] idList = (Object[]) command.searchObject(objectName, preparedFilters, offset, limit, order, false);
+		Object[] idList = (Object[]) command.searchObject(modelName, preparedFilters, offset, limit, order, false);
 
 		return readObject(idList, fieldArray);
 
@@ -797,7 +800,7 @@ public class ObjectAdapter {
 		if (valueList.size() == 0)
 			return false;
 
-		boolean success = command.writeObject(objectName, id, valueList);
+		boolean success = command.writeObject(modelName, id, valueList);
 
 		if (success)
 			row.changesApplied();
@@ -824,7 +827,7 @@ public class ObjectAdapter {
 		if (valueList.size() == 0)
 			throw new OpeneERPApiException("Row doesn't have any fields to update");
 
-		Object id = command.createObject(objectName, valueList);
+		Object id = command.createObject(modelName, valueList);
 
 		row.put("id", id);
 		row.changesApplied();
@@ -847,7 +850,7 @@ public class ObjectAdapter {
 	@SuppressWarnings("unchecked")
 	public FieldCollection callFieldsFunction(String functionName, Object[] parameters)
 			throws XmlRpcException, OpeneERPApiException {
-		Object[] results = command.callObjectFunction(objectName, functionName, parameters);
+		Object[] results = command.callObjectFunction(modelName, functionName, parameters);
 
 		// Go through the first row and fetch the fields
 		FieldCollection fieldCol = new FieldCollection();
@@ -913,7 +916,7 @@ public class ObjectAdapter {
 	 */
 	public RowCollection callFunction(String functionName, Object[] parameters, FieldCollection fieldCol)
 			throws XmlRpcException, OpeneERPApiException {
-		Object[] results = command.callObjectFunction(objectName, functionName, parameters);
+		Object[] results = command.callObjectFunction(modelName, functionName, parameters);
 
 		if (fieldCol == null)
 			fieldCol = callFieldsFunction(functionName, parameters);
@@ -936,9 +939,9 @@ public class ObjectAdapter {
 	 * @throws OpeneERPApiException
 	 */
 	public void executeWorkflow(Row row, String signal) throws XmlRpcException, OpeneERPApiException {
-		ObjectAdapter.signalExists(this.command, this.objectName, signal);
+		ObjectAdapter.signalExists(this.command, this.modelName, signal);
 
-		command.executeWorkflow(this.objectName, signal, row.getID());
+		command.executeWorkflow(this.modelName, signal, row.getID());
 	}
 
 	/**
@@ -956,7 +959,7 @@ public class ObjectAdapter {
 			ids[i] = rows.get(i).getID();
 		}
 
-		return this.command.unlinkObject(this.objectName, ids);
+		return this.command.unlinkObject(this.modelName, ids);
 	}
 
 	/**
