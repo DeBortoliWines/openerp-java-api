@@ -1,5 +1,6 @@
 package com.debortoliwines.odoo.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import java.util.HashMap;
@@ -118,6 +119,7 @@ public class ObjectAdapterTest {
 	}
 
 	public final class TestCommand2 extends AbstractTestCommand {
+		boolean executeWorkflowCalled = false;
 
 		@Override
 		public Object[] readObject(String objectName, Object[] ids, String[] fields) throws XmlRpcException {
@@ -143,7 +145,7 @@ public class ObjectAdapterTest {
 		@Override
 		public void executeWorkflow(final String objectName, final String signal, final int objectID)
 				throws XmlRpcException {
-
+			executeWorkflowCalled = true;
 		}
 	}
 
@@ -173,6 +175,15 @@ public class ObjectAdapterTest {
 		// Don't forget to call SoftAssertions global verification !
 		softAssertions.assertAll();
 
+	}
+
+	@Test
+	public void should_call_execute_worflow_on_command() throws Exception {
+		TestCommand2 command = new TestCommand2();
+		ObjectAdapter adapter = new ObjectAdapter(command, TEST_MODEL_NAME, null);
+		Row row = new Row(new HashMap<String, Object>(), new FieldCollection());
+		adapter.executeWorkflow(row, TEST_SIGNAL_NAME);
+		assertThat(command.executeWorkflowCalled).as("Command's executeWorkflow has been called").isTrue();
 	}
 
 }
