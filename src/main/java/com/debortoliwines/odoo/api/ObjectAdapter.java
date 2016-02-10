@@ -43,23 +43,23 @@ public class ObjectAdapter {
 	private final String modelName;
 	private final OpenERPCommand command;
 	private final FieldCollection allFields;
-	private final Version server_version;
+	private final Version serverVersion;
 
 	// Object name cache so the adapter doesn't have to reread model names from
 	// the database for every new object.
 	// Bulk loads/reads can become very slow if every adapter requires a call
 	// back to the server
-	private static ArrayList<String> objectNameCache = new ArrayList<String>();
+	private static ArrayList<String> objectNameCache = new ArrayList<>();
 
 	// Object workflow signal cache so the adapter doesn't have to reread signal
 	// names from the database for every workflow call.
-	private static ArrayList<String> signalCache = new ArrayList<String>();
+	private static ArrayList<String> signalCache = new ArrayList<>();
 
 	// Cache used to store the name_get result of an model to cater for
 	// many2many relations in the import function
 	// It is cleared every time the import function is called for a specific
 	// object
-	private HashMap<String, HashMap<String, String>> modelNameCache = new HashMap<String, HashMap<String, String>>();
+	private HashMap<String, HashMap<String, String>> modelNameCache = new HashMap<>();
 
 	/**
 	 * Default constructor
@@ -79,7 +79,7 @@ public class ObjectAdapter {
 			throws OpeneERPApiException, XmlRpcException {
 		this.command = command;
 		this.modelName = modelName;
-		this.server_version = serverVersion;
+		this.serverVersion = serverVersion;
 
 		validateModelExists();
 
@@ -103,7 +103,7 @@ public class ObjectAdapter {
 		// have added a new module after the cache was created
 		// Ticket #1 from sourceforge
 		if (objectNameCache.indexOf(modelName) < 0) {
-			objectNameCache.clear();
+			clearModelNameCache();
 			try {
 				Object[] ids = command.searchObject("ir.model", new Object[] {});
 				Object[] result = command.readObject("ir.model", ids, new String[] { "model" });
@@ -119,39 +119,54 @@ public class ObjectAdapter {
 			throw new OpeneERPApiException("Could not find model with name '" + modelName + "'");
 	}
 
-	@SuppressWarnings("unchecked")
-	private synchronized static void signalExists(OpenERPCommand commands, String objectName, String signal)
+	static void clearModelNameCache() {
+		objectNameCache.clear();
+	}
+
+	private void checkSignalExists(String signal)
 			throws OpeneERPApiException {
 		// If you can't find the signal, reload the cache. Somebody may have
 		// added a new module after the cache was created
-		// Ticket #1 from sourceforge
-		String signalCombo = objectName + "#" + signal;
+		String signalCombo = modelName + "#" + signal;
 		if (!signalCache.contains(signalCombo)) {
-			signalCache.clear();
-			try {
-				Object[] ids = commands.searchObject("workflow.transition", new Object[] {});
-				Object[] result = commands.readObject("workflow.transition", ids, new String[] { "signal", "wkf_id" });
-				for (Object row : result) {
-					/*
-					 * Get the parent workflow to work out get the object name
-					 */
-					int wkf_id = Integer
-							.parseInt(((Object[]) ((HashMap<String, Object>) row).get("wkf_id"))[0].toString());
-					Object[] workflow = commands.readObject("workflow", new Object[] { wkf_id },
-							new String[] { "osv" });
-
-					String obj = ((HashMap<String, Object>) workflow[0]).get("osv").toString();
-					String sig = ((HashMap<String, Object>) row).get("signal").toString();
-					signalCache.add(obj + "#" + sig);
+			// Only one thread need to do the updating
+			synchronized (this.getClass()) {
+				// Cache may now contain the signal (updated by another thread
+				// while waiting at the synchronized gate).
+				if (!signalCache.contains(signalCombo)) {
+					refreshSignalCache(command);
 				}
-			} catch (XmlRpcException e) {
-				throw new OpeneERPApiException("Could not validate signal name: ", e);
 			}
 		}
 
+		// If still not found, this is an error...
 		if (!signalCache.contains(signalCombo))
 			throw new OpeneERPApiException(
-					"Could not find signal with name '" + signal + "' for object '" + objectName + "'");
+					"Could not find signal with name '" + signal + "' for object '" + modelName + "'");
+	}
+
+	@SuppressWarnings("unchecked")
+	private static void refreshSignalCache(OpenERPCommand command) throws OpeneERPApiException {
+		signalCache.clear();
+		try {
+			Object[] ids = command.searchObject("workflow.transition", new Object[] {});
+			Object[] result = command.readObject("workflow.transition", ids, new String[] { "signal", "wkf_id" });
+			for (Object row : result) {
+				/*
+				 * Get the parent workflow to work out get the object name
+				 */
+				int wkfId = Integer
+						.parseInt(((Object[]) ((HashMap<String, Object>) row).get("wkf_id"))[0].toString());
+				Object[] workflow = command.readObject("workflow", new Object[] { wkfId },
+						new String[] { "osv" });
+
+				String obj = ((HashMap<String, Object>) workflow[0]).get("osv").toString();
+				String sig = ((HashMap<String, Object>) row).get("signal").toString();
+				signalCache.add(obj + "#" + sig);
+			}
+		} catch (XmlRpcException e) {
+			throw new OpeneERPApiException("Could not validate signal name: ", e);
+		}
 	}
 
 	/**
@@ -373,18 +388,18 @@ public class ObjectAdapter {
 				value = new SimpleDateFormat("yyyy-MM-dd").format((Date) value);
 			} else if (fld != null && fld.getType() == FieldType.DATETIME && value instanceof Date) {
 				value = new SimpleDateFormat("yyyy-MM-dd HH:mm").format((Date) value);
-			} else if (comparison.equals("=")) {
+			} else if ("=".equals(comparison)) {
 
 				// If a integer field is not an integer in a '=' comparison,
 				// parse it as an int
 				if (!(value instanceof Integer)) {
-					if (fieldName.equals("id")
+					if ("id".equals(fieldName)
 							|| (fld != null && fld.getType() == FieldType.INTEGER && !(value instanceof Integer))
 							|| (fld != null && fld.getType() == FieldType.MANY2ONE && !(value instanceof Integer))) {
 						value = Integer.parseInt(value.toString());
 					}
 				}
-			} else if (comparison.equalsIgnoreCase("in")) {
+			} else if ("in".equalsIgnoreCase(comparison)) {
 				if (value instanceof String) {
 					// Split by , where the , isn't preceded by a \
 					String[] entries = value.toString().split("(?<!\\\\),");
@@ -397,7 +412,7 @@ public class ObjectAdapter {
 						if (fld != null
 								&& (fld.getType() == FieldType.INTEGER || fld.getType() == FieldType.ONE2MANY
 										|| fld.getType() == FieldType.MANY2MANY || fld.getType() == FieldType.MANY2ONE)
-								|| fieldName.equals("id")) {
+								|| "id".equals(fieldName)) {
 							valueArr[entrIdx] = Integer.parseInt(entry);
 						} else
 							valueArr[entrIdx] = entry;
@@ -560,12 +575,11 @@ public class ObjectAdapter {
 	 * @throws XmlRpcException
 	 * @throws OpeneERPApiException
 	 */
-	@SuppressWarnings("unchecked")
 	public boolean importData(RowCollection rows) throws OpeneERPApiException, XmlRpcException {
 
 		// Workaround. Odoo7 bug where old and new rows can't be sent
 		// together using the import_data or load function
-		if (this.server_version.getMajor() >= 7 && this.server_version.getMinor() == 0) {
+		if (this.serverVersion.getMajor() >= 7 && this.serverVersion.getMinor() == 0) {
 			RowCollection newRows = new RowCollection();
 			RowCollection oldRows = new RowCollection();
 
@@ -577,13 +591,12 @@ public class ObjectAdapter {
 			}
 
 			// If mixed rows, import old and new rows separately
-			if (newRows.size() != 0 && oldRows.size() != 0) {
+			if (!newRows.isEmpty() && !oldRows.isEmpty()) {
 				return this.importData(oldRows) && this.importData(newRows);
 			}
 		}
 
 		modelNameCache.clear();
-		String[] targetFieldList = getFieldListForImport(rows.get(0).getFields());
 
 		Object[][] importRows = new Object[rows.size()][];
 
@@ -592,60 +605,77 @@ public class ObjectAdapter {
 			importRows[i] = fixImportData(row);
 		}
 
-		// The load function was introduced in V7 and the import function
-		// deprecated
-		if (this.server_version.getMajor() >= 7) {
-
-			// Workaround Odoo V7 bug. Remove the .id field for new rows.
-			if (this.server_version.getMinor() == 0 && rows.size() > 0 && rows.get(0).getID() == 0) {
-				String[] newTargetFieldList = new String[targetFieldList.length - 1];
-				for (int i = 1; i < targetFieldList.length; i++) {
-					newTargetFieldList[i - 1] = targetFieldList[i];
-				}
-				targetFieldList = newTargetFieldList;
-
-				Object[][] newImportRows = new Object[rows.size()][];
-				for (int i = 0; i < importRows.length; i++) {
-					Object[] newRow = new Object[importRows[i].length - 1];
-					for (int j = 1; j < importRows[i].length; j++) {
-						newRow[j - 1] = importRows[i][j];
-					}
-					newImportRows[i] = newRow;
-				}
-				importRows = newImportRows;
-			}
-
-			HashMap<String, Object> results = command.Load(modelName, targetFieldList, importRows);
-
-			// There was an error. ids is false and not an Object[]
-			if (results.get("ids") instanceof Boolean) {
-				StringBuilder errorString = new StringBuilder();
-				Object[] messages = (Object[]) results.get("messages");
-				for (Object mes : messages) {
-					HashMap<String, Object> messageHash = (HashMap<String, Object>) mes;
-					errorString.append("Row: " + messageHash.get("record").toString() + " field: "
-							+ messageHash.get("field").toString() + " ERROR: " + messageHash.get("message").toString()
-							+ "\n");
-				}
-				throw new OpeneERPApiException(errorString.toString());
-			}
-
-			// Should be in the same order as it was passed in
-			Object[] ids = (Object[]) results.get("ids");
-			for (int i = 0; i < rows.size(); i++) {
-				Row row = rows.get(i);
-				row.put("id", ids[i]);
-			}
-		} else { // Use older import rows function
-			Object[] result = command.importData(modelName, targetFieldList, importRows);
-
-			// Should return the number of rows committed. If there was an
-			// error, it returns -1
-			if ((Integer) result[0] != importRows.length)
-				throw new OpeneERPApiException(result[2].toString() + "\nRow :" + result[1].toString() + "");
+		if (this.serverVersion.getMajor() >= 7) {
+			// The load function was introduced in V7 and the import function
+			// deprecated
+			importDataV7(rows, importRows);
+		} else {
+			// Use older import rows function
+			importDataLegacy(rows, importRows);
 		}
 
 		return true;
+	}
+
+	private void importDataLegacy(RowCollection rows, Object[][] importRows)
+			throws XmlRpcException, OpeneERPApiException {
+
+		String[] targetFieldList = getFieldListForImport(rows.get(0).getFields());
+
+		Object[] result = command.importData(modelName, targetFieldList, importRows);
+
+		// Should return the number of rows committed. If there was an
+		// error, it returns -1
+		if ((Integer) result[0] != importRows.length)
+			throw new OpeneERPApiException(result[2].toString() + "\nRow :" + result[1].toString() + "");
+	}
+
+	@SuppressWarnings("unchecked")
+	private void importDataV7(RowCollection rows, Object[][] importRows)
+			throws XmlRpcException, OpeneERPApiException {
+
+		String[] targetFieldList = getFieldListForImport(rows.get(0).getFields());
+
+		// Workaround Odoo V7 bug. Remove the .id field for new rows.
+		if (this.serverVersion.getMinor() == 0 && !rows.isEmpty() && rows.get(0).getID() == 0) {
+			String[] newTargetFieldList = new String[targetFieldList.length - 1];
+			for (int i = 1; i < targetFieldList.length; i++) {
+				newTargetFieldList[i - 1] = targetFieldList[i];
+			}
+			targetFieldList = newTargetFieldList;
+
+			Object[][] newImportRows = new Object[rows.size()][];
+			for (int i = 0; i < importRows.length; i++) {
+				Object[] newRow = new Object[importRows[i].length - 1];
+				for (int j = 1; j < importRows[i].length; j++) {
+					newRow[j - 1] = importRows[i][j];
+				}
+				newImportRows[i] = newRow;
+			}
+			importRows = newImportRows;
+		}
+
+		HashMap<String, Object> results = command.Load(modelName, targetFieldList, importRows);
+
+		// There was an error. ids is false and not an Object[]
+		if (results.get("ids") instanceof Boolean) {
+			StringBuilder errorString = new StringBuilder();
+			Object[] messages = (Object[]) results.get("messages");
+			for (Object mes : messages) {
+				HashMap<String, Object> messageHash = (HashMap<String, Object>) mes;
+				errorString.append("Row: " + messageHash.get("record").toString() + " field: "
+						+ messageHash.get("field").toString() + " ERROR: " + messageHash.get("message").toString()
+						+ "\n");
+			}
+			throw new OpeneERPApiException(errorString.toString());
+		}
+
+		// Should be in the same order as it was passed in
+		Object[] ids = (Object[]) results.get("ids");
+		for (int i = 0; i < rows.size(); i++) {
+			Row row = rows.get(i);
+			row.put("id", ids[i]);
+		}
 	}
 
 	/**
@@ -939,7 +969,8 @@ public class ObjectAdapter {
 	 * @throws OpeneERPApiException
 	 */
 	public void executeWorkflow(Row row, String signal) throws XmlRpcException, OpeneERPApiException {
-		ObjectAdapter.signalExists(this.command, this.modelName, signal);
+		// Sanity check
+		checkSignalExists(signal);
 
 		command.executeWorkflow(this.modelName, signal, row.getID());
 	}
