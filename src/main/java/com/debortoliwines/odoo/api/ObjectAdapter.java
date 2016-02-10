@@ -126,7 +126,7 @@ public class ObjectAdapter {
 		// added a new module after the cache was created
 		// Ticket #1 from sourceforge
 		String signalCombo = objectName + "#" + signal;
-		if (signalCache.indexOf(signalCombo) < 0) {
+		if (!signalCache.contains(signalCombo)) {
 			signalCache.clear();
 			try {
 				Object[] ids = commands.searchObject("workflow.transition", new Object[] {});
@@ -149,7 +149,7 @@ public class ObjectAdapter {
 			}
 		}
 
-		if (signalCache.indexOf(signalCombo) < 0)
+		if (!signalCache.contains(signalCombo))
 			throw new OpeneERPApiException(
 					"Could not find signal with name '" + signal + "' for object '" + objectName + "'");
 	}
