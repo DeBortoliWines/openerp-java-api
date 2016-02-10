@@ -179,9 +179,8 @@ public class ObjectAdapter {
 	 * @throws XmlRpcException
 	 * @throws OpeneERPApiException
 	 */
-	public Row getNewRow(FieldCollection fields) throws XmlRpcException, OpeneERPApiException {
-		Row row = new Row(new HashMap<String, Object>(), fields);
-		return row;
+	public Row getNewRow(FieldCollection fields) throws OpeneERPApiException {
+		return new Row(new HashMap<String, Object>(), fields);
 	}
 
 	/**
@@ -197,9 +196,7 @@ public class ObjectAdapter {
 	 * @throws OpeneERPApiException
 	 */
 	public Row getNewRow(String[] fields) throws XmlRpcException, OpeneERPApiException {
-		FieldCollection fieldCol = getFields(fields);
-		Row row = new Row(new HashMap<String, Object>(), fieldCol);
-		return row;
+		return getNewRow(getFields(fields));
 	}
 
 	/**
