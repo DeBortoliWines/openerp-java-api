@@ -20,6 +20,8 @@
 package com.debortoliwines.odoo.api;
 
 import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.xmlrpc.XmlRpcException;
 
 /**
@@ -98,9 +100,8 @@ public class OpenERPCommand {
 	 * @return True if the update was successful
 	 * @throws XmlRpcException
 	 */
-	public boolean writeObject(String objectName, int id, HashMap<String, Object> valueList) throws XmlRpcException{
-		boolean result = false;
-		result = (Boolean) session.executeCommand(objectName, "write", new Object[] {id, valueList});
+	public boolean writeObject(String objectName, int id, Map<String, Object> valueList) throws XmlRpcException {
+		boolean result = (Boolean) session.executeCommand(objectName, "write", new Object[] { id, valueList });
 		return result;
 	}
 

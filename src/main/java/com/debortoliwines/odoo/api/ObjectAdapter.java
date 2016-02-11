@@ -23,6 +23,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.xmlrpc.XmlRpcException;
 
@@ -797,8 +798,7 @@ public class ObjectAdapter {
 	 * @throws OpeneERPApiException
 	 * @throws XmlRpcException
 	 */
-	public boolean writeObject(final Row row, boolean changesOnly) throws OpeneERPApiException, XmlRpcException {
-		HashMap<String, Object> valueList = new HashMap<String, Object>();
+	public boolean writeObject(final Row row, boolean changesOnly) throws OpeneERPApiException {
 
 		Object idObj = row.get("id");
 
@@ -807,23 +807,38 @@ public class ObjectAdapter {
 
 		int id = Integer.parseInt(idObj.toString());
 
-		if (changesOnly) {
-			for (Field fld : row.getChangedFields())
-				valueList.put(fld.getName(), formatValueForWrite(fld, row.get(fld)));
-		} else
-			for (Field fld : row.getFields()) {
-				valueList.put(fld.getName(), formatValueForWrite(fld, row.get(fld)));
-			}
+		Map<String, Object> valueList = collectValues(row, changesOnly);
 
 		if (valueList.size() == 0)
 			return false;
 
-		boolean success = command.writeObject(modelName, id, valueList);
+		try {
 
-		if (success)
-			row.changesApplied();
+			boolean success = command.writeObject(modelName, id, valueList);
+			if (success) {
+				row.changesApplied();
+			}
+			return success;
 
-		return success;
+		} catch (XmlRpcException e) {
+			throw new OpeneERPApiException(e);
+		}
+
+	}
+
+	private Map<String, Object> collectValues(final Row row, boolean changesOnly) {
+		Map<String, Object> valueList = new HashMap<>();
+		FieldCollection fields;
+		if (changesOnly) {
+			fields = row.getChangedFields();
+		} else {
+			fields = row.getFields();
+		}
+
+		for (Field fld : fields) {
+			valueList.put(fld.getName(), formatValueForWrite(fld, row.get(fld)));
+		}
+		return valueList;
 	}
 
 	/**
