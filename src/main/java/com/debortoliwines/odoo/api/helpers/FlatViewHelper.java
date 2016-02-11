@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.stream.Collectors;
 
 import org.apache.xmlrpc.XmlRpcException;
 
@@ -112,31 +113,24 @@ public class FlatViewHelper {
 	 */
 	public static String[] getFieldNames(String objectName, FieldCollection fields) throws XmlRpcException {
 		
-		ArrayList<String> fieldNames = new ArrayList<String>();
-		
-		for (FlatViewField fld : getFields(objectName, fields)){
-			fieldNames.add(fld.getName());
-		}
-		
-		return fieldNames.toArray(new String[0]);
+		return getFields(objectName, fields).stream()
+				.map(f -> f.getName())
+				.toArray(String[]::new);
 	}
 	
 	/**
 	 * Returns the original field names from a flattened out view collection 
-	 * @param objectName Object that the fields are for, for eg res.partner
 	 * @param fields Flattened out field collection 
 	 * @return Original list of fields that the flattened out collection was built on
 	 */
-	public static String[] getOriginalFieldNames(String objectName, FlatViewFieldCollection fields){
-		ArrayList<String> fieldNames = new ArrayList<String>();
+	public static String[] getOriginalFieldNames(FlatViewFieldCollection fields){
 		
-		for (FlatViewField fld : fields){
-			if (fieldNames.indexOf(fld.getSourceField().getName()) < 0){
-				fieldNames.add(fld.getName());
-			}
-		}
-		
-		return fieldNames.toArray(new String[0]);
+		return fields.stream()
+				.collect(Collectors.toMap(
+						f -> f.getSourceField().getName(), 
+						f -> f.getName(), 
+						(f1, f2) -> f1))
+				.values().toArray(new String[0]);
 	}
 	
 	/**

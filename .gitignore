@@ -11,3 +11,6 @@
 # properties file holding connection data for integration test
 demodb.properties
 
+# Intellij IDEA stuff
+.idea/*
+*.iml

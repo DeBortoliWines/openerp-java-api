@@ -23,8 +23,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import org.apache.xmlrpc.XmlRpcException;
 
@@ -50,17 +53,17 @@ public class ObjectAdapter {
 	// the database for every new object.
 	// Bulk loads/reads can become very slow if every adapter requires a call
 	// back to the server
-	private static ArrayList<String> objectNameCache = new ArrayList<>();
+	private static final List<String> objectNameCache = new ArrayList<>();
 
 	// Object workflow signal cache so the adapter doesn't have to reread signal
 	// names from the database for every workflow call.
-	private static ArrayList<String> signalCache = new ArrayList<>();
+	private static final List<String> signalCache = new ArrayList<>();
 
 	// Cache used to store the name_get result of an model to cater for
 	// many2many relations in the import function
 	// It is cleared every time the import function is called for a specific
 	// object
-	private HashMap<String, HashMap<String, String>> modelNameCache = new HashMap<>();
+	private final Map<String, Map<String, String>> modelNameCache = new ConcurrentHashMap<>();
 
 	/**
 	 * Default constructor
@@ -238,9 +241,7 @@ public class ObjectAdapter {
 		 * sortedResults[idList.indexOf(id)] = result; }
 		 ****/
 
-		RowCollection rows = new RowCollection(results, fieldCol);
-
-		return rows;
+		return new RowCollection(results, fieldCol);
 	}
 
 	/***
@@ -487,9 +488,9 @@ public class ObjectAdapter {
 				 * import. Replace the ID list passed in with a Name list for
 				 * the import_data function that we are about to call
 				 */
-				HashMap<String, String> idToName = null;
+				Map<String, String> idToName;
 				if (!modelNameCache.containsKey(fld.getRelation())) {
-					idToName = new HashMap<String, String>();
+					idToName = new HashMap<>();
 					Object[] ids = command.searchObject(fld.getRelation(), new Object[] {});
 					Object[] names = command.nameGet(fld.getRelation(), ids);
 					for (int j = 0; j < ids.length; j++) {
@@ -533,19 +534,17 @@ public class ObjectAdapter {
 	}
 
 	private String[] getFieldListForImport(FieldCollection currentFields) {
+		return Stream
+				.concat(Stream.of(".id"),
+						currentFields.stream().map(ObjectAdapter::getFieldNameForImport))
+				.toArray(String[]::new);
 
-		ArrayList<String> fieldList = new ArrayList<String>();
-		fieldList.add(".id");
+	}
 
-		for (Field field : currentFields) {
-			if (field.getType() == FieldType.MANY2ONE)
-				fieldList.add(field.getName() + ".id");
-			else
-				fieldList.add(field.getName());
-		}
-
-		return fieldList.toArray(new String[fieldList.size()]);
-
+	private static String getFieldNameForImport(Field field) {
+		// Return field name, adding ".id" if type is MANY2ONE
+		return field.getType() == FieldType.MANY2ONE ? field.getName() + ".id"
+				: field.getName();
 	}
 
 	/**
@@ -723,7 +722,7 @@ public class ObjectAdapter {
 	public RowCollection searchAndReadObject(final FilterCollection filter, final String[] fields, int offset,
 			int limit, String order) throws XmlRpcException, OpeneERPApiException {
 
-		String[] fieldArray = (fields == null ? new String[] {} : fields);
+		String[] fieldArray = fields == null ? new String[] {} : fields;
 		Object[] preparedFilters = validateFilters(filter);
 		Object[] idList = (Object[]) command.searchObject(modelName, preparedFilters, offset, limit, order, false);
 
@@ -938,7 +937,7 @@ public class ObjectAdapter {
 				}
 
 				if (fldDetails == null)
-					fldDetails = new HashMap<String, Object>();
+					fldDetails = new HashMap<>();
 
 				if (!fldDetails.containsKey("name"))
 					fldDetails.put("name", field);
@@ -991,9 +990,7 @@ public class ObjectAdapter {
 		if (fieldCol == null)
 			fieldCol = callFieldsFunction(functionName, parameters);
 
-		RowCollection rows = new RowCollection(results, fieldCol);
-
-		return rows;
+		return new RowCollection(results, fieldCol);
 	}
 
 	/**

@@ -36,6 +36,8 @@ import com.debortoliwines.odoo.api.OdooXmlRpcProxy.RPCServices;
  */
 public class Session {
 
+	private static final String LINE_SEPARATOR_SYSTEM_PROPERTY = "line.separator";
+	private static final String LINE_SEPARATOR = System.getProperty(LINE_SEPARATOR_SYSTEM_PROPERTY);
 	private String host;
 	private int port;
 	private String databaseName;
@@ -162,16 +164,14 @@ public class Session {
 		  }
 	}
 
-	void checkDatabasePresence() throws XmlRpcException, Exception {
+	void checkDatabasePresence() throws XmlRpcException {
 		ArrayList<String> dbList = getDatabaseList(protocol, host, port);
-		if (dbList.indexOf(databaseName) < 0) {
-			StringBuffer dbListBuff = new StringBuffer();
-			for (String dbName : dbList)
-				dbListBuff.append(dbName + System.getProperty("line.separator"));
+		if (!dbList.contains(databaseName)) {
+			StringBuilder messageBuilder = new StringBuilder("Error while connecting to Odoo.  Database [")
+					.append(databaseName).append("]  was not found in the following list: ").append(LINE_SEPARATOR)
+					.append(LINE_SEPARATOR).append(String.join(LINE_SEPARATOR, dbList)).append(LINE_SEPARATOR);
 
-			throw new Exception("Error while connecting to Odoo.  Database [" + databaseName + "] "
-					+ " was not found in the following list: " + System.getProperty("line.separator")
-					+ System.getProperty("line.separator") + dbListBuff.toString());
+			throw new IllegalStateException(messageBuilder.toString());
 		}
 	}
 	
@@ -179,7 +179,8 @@ public class Session {
 		while (Session.connecting){
 			try {
 				Thread.sleep(100);
-			} catch (Exception e) {
+			} catch (InterruptedException e) {
+				e.printStackTrace();
 			}
 		}
 		Session.connecting = true;
