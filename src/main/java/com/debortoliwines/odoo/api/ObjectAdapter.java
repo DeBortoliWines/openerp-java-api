@@ -27,7 +27,6 @@ import java.util.HashMap;
 import org.apache.xmlrpc.XmlRpcException;
 
 import com.debortoliwines.odoo.api.Field.FieldType;
-import com.debortoliwines.odoo.api.FilterCollection.FilterOperator;
 import com.debortoliwines.odoo.api.helpers.FilterHelper;
 
 /**
@@ -97,8 +96,7 @@ public class ObjectAdapter {
 	 *             If the model could not be validated
 	 */
 	@SuppressWarnings("unchecked")
-	synchronized void validateModelExists()
-			throws OpeneERPApiException {
+	synchronized void validateModelExists() throws OpeneERPApiException {
 		// If you can't find the object name, reload the cache. Somebody may
 		// have added a new module after the cache was created
 		// Ticket #1 from sourceforge
@@ -123,8 +121,7 @@ public class ObjectAdapter {
 		objectNameCache.clear();
 	}
 
-	private void checkSignalExists(String signal)
-			throws OpeneERPApiException {
+	private void checkSignalExists(String signal) throws OpeneERPApiException {
 		// If you can't find the signal, reload the cache. Somebody may have
 		// added a new module after the cache was created
 		String signalCombo = modelName + "#" + signal;
@@ -155,10 +152,8 @@ public class ObjectAdapter {
 				/*
 				 * Get the parent workflow to work out get the object name
 				 */
-				int wkfId = Integer
-						.parseInt(((Object[]) ((HashMap<String, Object>) row).get("wkf_id"))[0].toString());
-				Object[] workflow = command.readObject("workflow", new Object[] { wkfId },
-						new String[] { "osv" });
+				int wkfId = Integer.parseInt(((Object[]) ((HashMap<String, Object>) row).get("wkf_id"))[0].toString());
+				Object[] workflow = command.readObject("workflow", new Object[] { wkfId }, new String[] { "osv" });
 
 				String obj = ((HashMap<String, Object>) workflow[0]).get("osv").toString();
 				String sig = ((HashMap<String, Object>) row).get("signal").toString();
@@ -310,75 +305,48 @@ public class ObjectAdapter {
 		if (filters == null)
 			return new Object[0];
 
-		ArrayList<Object> processedFilters = new ArrayList<Object>();
+		ArrayList<Object> processedFilters = new ArrayList<>();
 
 		for (int i = 0; i < filters.getFilters().length; i++) {
 			Object filter = filters.getFilters()[i];
 
 			if (filter == null)
-				throw new OpeneERPApiException("The first filter parameter is mandatory");
+				throw new IllegalArgumentException("null filter parameter is not allowed");
 
 			// Is a logical operator
 			if (filter instanceof String) {
-				String operator = filter.toString();
-
-				if (operator.equals(FilterOperator.AND))
-					continue;
-
-				// OR must have two parameters following
-				if (operator.equals(FilterOperator.OR))
-					if (filters.getFilters().length <= i + 2)
-						throw new OpeneERPApiException(
-								"Logical operator OR needs two parameters.  Please read the Odoo help.");
-
-				// NOT must have one parameter following
-				if (operator.equals(FilterOperator.NOT))
-					if (filters.getFilters().length <= i + 1)
-						throw new OpeneERPApiException(
-								"Logical operator NOT needs one parameter.  Please read the Odoo help.");
-
-				processedFilters.add(operator);
+				processedFilters.add(filter);
 				continue;
 			}
 
-			if (!(filter instanceof Object[]) && ((Object[]) filter).length != 3)
+			// Is a comparison filter
+			Object[] filterObjects = (Object[]) filter;
+			if (!(filter instanceof Object[]) || filterObjects.length != 3) {
 				throw new OpeneERPApiException("Filters aren't in the correct format.  Please read the Odoo help.");
-
-			String fieldName = ((Object[]) filter)[0].toString();
-			String comparison = ((Object[]) filter)[1].toString();
-			Object value = ((Object[]) filter)[2];
-
-			Field fld = null;
-			for (int j = 0; j < allFields.size(); j++) {
-				if (allFields.get(j).getName().equals(fieldName)) {
-					fld = allFields.get(j);
-					break;
-				}
 			}
 
+			String fieldName = filterObjects[0].toString();
+			String comparison = filterObjects[1].toString();
+			Object value = filterObjects[2];
+
+			Field fld = findFieldByName(fieldName);
+
 			// Can't search on calculated fields
-			if (fld != null && fld.getFunc_method() == true)
+			if (fld != null && fld.getFunc_method()) {
 				throw new OpeneERPApiException("Can not search on function field " + fieldName);
+			}
 
 			// Fix the value type if required for the Odoo server
-			if (!fieldName.equals("id") && fld == null)
+			if (!"id".equals(fieldName) && fld == null) {
 				throw new OpeneERPApiException("Unknow filter field " + fieldName);
-			else if (comparison.equals("is null")) {
+			} else if ("is null".equals(comparison)) {
 				comparison = "=";
 				value = false;
-			} else if (comparison.equals("is not null")) {
+			} else if ("is not null".equals(comparison)) {
 				comparison = "!=";
 				value = false;
 			} else if (fld != null && fld.getType() == FieldType.BOOLEAN && !(value instanceof Boolean)) {
-				if (value instanceof String) {
-					char firstchar = value.toString().toLowerCase().charAt(0);
-					if (firstchar == '1' || firstchar == 'y' || firstchar == 't')
-						value = true;
-					else if (firstchar == '0' || firstchar == 'n' || firstchar == 'f')
-						value = false;
-					else
-						throw new OpeneERPApiException("Unknown boolean " + value.toString());
-				}
+				value = convertToBoolean(value);
 			} else if (fld != null && fld.getType() == FieldType.FLOAT && !(value instanceof Double))
 				value = Double.parseDouble(value.toString());
 			else if (fld != null && fld.getType() == FieldType.DATE && value instanceof Date) {
@@ -423,9 +391,33 @@ public class ObjectAdapter {
 			}
 
 			processedFilters.add(new Object[] { fieldName, comparison, value });
+
 		}
 
 		return processedFilters.toArray(new Object[processedFilters.size()]);
+	}
+
+	private Object convertToBoolean(Object value) throws OpeneERPApiException {
+		if (value instanceof String) {
+			char firstchar = value.toString().toLowerCase().charAt(0);
+			if (firstchar == '1' || firstchar == 'y' || firstchar == 't') {
+				return true;
+			} else if (firstchar == '0' || firstchar == 'n' || firstchar == 'f') {
+				return false;
+			} else {
+				throw new OpeneERPApiException("Unknown boolean " + value.toString());
+			}
+		}
+		return value;
+	}
+
+	private Field findFieldByName(String fieldName) {
+		for (Field field : allFields) {
+			if (field.getName().equals(fieldName)) {
+				return field;
+			}
+		}
+		return null;
 	}
 
 	private Object[] fixImportData(Row inputRow) throws OpeneERPApiException, XmlRpcException {
@@ -628,8 +620,7 @@ public class ObjectAdapter {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void importDataV7(RowCollection rows, Object[][] importRows)
-			throws XmlRpcException, OpeneERPApiException {
+	private void importDataV7(RowCollection rows, Object[][] importRows) throws XmlRpcException, OpeneERPApiException {
 
 		String[] targetFieldList = getFieldListForImport(rows.get(0).getFields());
 
