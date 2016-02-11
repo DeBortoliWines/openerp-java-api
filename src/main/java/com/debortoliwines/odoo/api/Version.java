@@ -17,7 +17,7 @@
  *
  */
 
-package com.debortoliwines.openerp.api;
+package com.debortoliwines.odoo.api;
 
 /**
  * Breaks up the OpenERP server version into a major, minor and build number

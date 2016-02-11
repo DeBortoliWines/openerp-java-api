@@ -17,30 +17,38 @@
  *
  */
 
-package com.debortoliwines.openerp.api;
+package com.debortoliwines.odoo.api;
 
-/**
- * Exception class for OpenERP API errors
+import java.util.ArrayList;
+import java.util.HashMap;
+
+/***
+ * Row collection for OpenERP row data
  * @author Pieter van der Merwe
  *
  */
-public class OpeneERPApiException extends Exception {
+public class RowCollection extends ArrayList<Row> {
 
-	private static final long serialVersionUID = 3148147969903379455L;
-
-	public OpeneERPApiException(String message) {
-		super(message);
-		// TODO Auto-generated constructor stub
+	private static final long serialVersionUID = -168965138153400087L;
+	
+	public RowCollection(){
 	}
 
-	public OpeneERPApiException(Throwable cause) {
-		super(cause);
-		// TODO Auto-generated constructor stub
+	@SuppressWarnings("unchecked")
+	public RowCollection(Object [] openERPResultSet, FieldCollection fields) throws OpeneERPApiException{
+		for (int i = 0; i < openERPResultSet.length; i++){
+			Row row = new Row((HashMap<String, Object>) openERPResultSet[i], fields);
+			this.add(row);
+		}
 	}
 
-	public OpeneERPApiException(String message, Throwable cause) {
-		super(message, cause);
-		// TODO Auto-generated constructor stub
+	@Override
+	public void add(int index, Row element) {
+		super.add(index, element);
 	}
 
+	@Override
+	public boolean add(Row e) {
+		return super.add(e);
+	}
 }

@@ -17,7 +17,7 @@
  *
  */
 
-package com.debortoliwines.openerp.api;
+package com.debortoliwines.odoo.api;
 
 import java.util.ArrayList;
 

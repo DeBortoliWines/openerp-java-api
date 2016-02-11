@@ -17,7 +17,7 @@
  *
  */
 
-package com.debortoliwines.openerp.api.helpers;
+package com.debortoliwines.odoo.api.helpers;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,9 +26,9 @@ import java.util.Date;
 
 import org.apache.xmlrpc.XmlRpcException;
 
-import com.debortoliwines.openerp.api.Field;
-import com.debortoliwines.openerp.api.FieldCollection;
-import com.debortoliwines.openerp.api.Row;
+import com.debortoliwines.odoo.api.Field;
+import com.debortoliwines.odoo.api.FieldCollection;
+import com.debortoliwines.odoo.api.Row;
 
 /**
  * Helper class to take a row object and flatten it out.

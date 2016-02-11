@@ -17,15 +17,15 @@
  *
  */
 
-package com.debortoliwines.openerp.api;
+package com.debortoliwines.odoo.api;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.apache.xmlrpc.XmlRpcException;
 
-import com.debortoliwines.openerp.api.OpenERPXmlRpcProxy.RPCProtocol;
-import com.debortoliwines.openerp.api.OpenERPXmlRpcProxy.RPCServices;
+import com.debortoliwines.odoo.api.OpenERPXmlRpcProxy.RPCProtocol;
+import com.debortoliwines.odoo.api.OpenERPXmlRpcProxy.RPCServices;
 
 /***
  * Manages an OpenERP session by holding context and initiating all calls to the server.
@@ -94,27 +94,11 @@ public class Session {
 
 	/***
 	 * Starts a session on the OpenERP server and saves the UserID for use in later calls
-	 * @throws Exception
+	 * @throws Exception upon failure to connect
 	 */
 	public void startSession() throws Exception {
 
-	  try{
-	    // 21/07/2012 - Database listing may not be enabled (--no-database-list or list_db=false).
-	    // Only provides additional information in any case.
-  		ArrayList<String> dbList = OpenERPXmlRpcProxy.getDatabaseList(protocol,host,port);
-  		if (dbList.indexOf(databaseName) < 0){
-  			StringBuffer dbListBuff = new StringBuffer();
-  			for (String dbName : dbList)
-  				dbListBuff.append(dbName + System.getProperty("line.separator"));
-  
-  			throw new Exception("Error while connecting to OpenERP.  Database [" + databaseName + "] "
-  					+ " was not found in the following list: " + System.getProperty("line.separator") 
-  					+ System.getProperty("line.separator") + dbListBuff.toString());
-  		}
-	  }
-	  catch(Exception e){
-	    
-	  }
+	  checkDatabasePresence();
 
 		// Connect
 		OpenERPXmlRpcProxy commonClient = new OpenERPXmlRpcProxy(protocol, host, port, RPCServices.RPC_COMMON);
@@ -123,6 +107,19 @@ public class Session {
 		// errors in the OpenERP server (for example by running a multi threaded ETL process like Kettle).
 		Session.startConnecting();
 		
+		authenticate(commonClient);
+		
+    this.context.clear();
+    @SuppressWarnings("unchecked")
+    HashMap<String, Object> openerpContext = (HashMap<String, Object>) this.executeCommand("res.users","context_get", new Object[]{});
+    this.context.putAll(openerpContext);
+    
+    // Standard behavior is web/gui clients.
+    this.context.setActiveTest(true);
+
+	}
+
+	int authenticate(OpenERPXmlRpcProxy commonClient) throws XmlRpcException, Exception {
 		Object id = null;
 		try{
 			id = commonClient.execute("login", new Object[] { databaseName, userName, password });
@@ -142,14 +139,27 @@ public class Session {
 		else
 			throw new Exception("Incorrect username and/or password.  Login Failed.");
 		
-    this.context.clear();
-    @SuppressWarnings("unchecked")
-    HashMap<String, Object> openerpContext = (HashMap<String, Object>) this.executeCommand("res.users","context_get", new Object[]{});
-    this.context.putAll(openerpContext);
-    
-    // Standard behavior is web/gui clients.
-    this.context.setActiveTest(true);
+		return userID;
+	}
 
+	private void checkDatabasePresence() {
+		try{
+		    // 21/07/2012 - Database listing may not be enabled (--no-database-list or list_db=false).
+		    // Only provides additional information in any case.
+			ArrayList<String> dbList = getDatabaseList(host,port);
+			if (dbList.indexOf(databaseName) < 0){
+				StringBuffer dbListBuff = new StringBuffer();
+				for (String dbName : dbList)
+					dbListBuff.append(dbName + System.getProperty("line.separator"));
+  
+				throw new Exception("Error while connecting to Odoo.  Database [" + databaseName + "] "
+						+ " was not found in the following list: " + System.getProperty("line.separator") 
+						+ System.getProperty("line.separator") + dbListBuff.toString());
+			}
+		  }
+		  catch(Exception e){
+		    
+		  }
 	}
 	
 	private synchronized static void startConnecting(){

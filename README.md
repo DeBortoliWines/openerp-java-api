@@ -1,9 +1,9 @@
-OpenERP Java Api
+Odoo Java Api
 ================
 
-A Java API to connect to OpenERP and manage data using the XMLRPC interface.
+A Java API to connect to Odoo and manage data using the XMLRPC interface.
 
-The API reduces the amount of boiler plate code needed to communicate with OpenERP by doing error checking and type conversions.
+The API reduces the amount of boiler plate code needed to communicate with Odoo by doing error checking and type conversions.
 
 For more information, including a Wiki please see the project on SourceForge: [https://sourceforge.net/projects/openerpjavaapi/](https://sourceforge.net/projects/openerpjavaapi)
 
