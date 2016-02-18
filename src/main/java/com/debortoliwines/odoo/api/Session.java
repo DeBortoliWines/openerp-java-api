@@ -99,7 +99,7 @@ public class Session {
 	 * A ObjectAdapter object does type conversions and error checking before making a call to the server
 	 * @return
 	 */
-	public ObjectAdapter getObjectAdapter(String objectName) throws XmlRpcException, OpeneERPApiException{
+	public ObjectAdapter getObjectAdapter(String objectName) throws XmlRpcException, OdooApiException{
 		return new ObjectAdapter(this, objectName);
 	}
 

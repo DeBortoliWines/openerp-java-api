@@ -26,6 +26,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -47,7 +48,7 @@ import com.debortoliwines.odoo.api.helpers.FilterHelper;
 public class ObjectAdapter {
 
 	private final String modelName;
-	private final OpenERPCommand command;
+	private final OdooCommand command;
 	private final FieldCollection allFields;
 	private final Version serverVersion;
 
@@ -75,14 +76,14 @@ public class ObjectAdapter {
 	 * @param modelName
 	 *            Model name that this adapter will work for.
 	 * @throws XmlRpcException
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 */
-	public ObjectAdapter(Session session, String modelName) throws XmlRpcException, OpeneERPApiException {
-		this(new OpenERPCommand(session), modelName, session.getServerVersion());
+	public ObjectAdapter(Session session, String modelName) throws XmlRpcException, OdooApiException {
+		this(new OdooCommand(session), modelName, session.getServerVersion());
 	}
 
-	ObjectAdapter(OpenERPCommand command, String modelName, Version serverVersion)
-			throws OpeneERPApiException, XmlRpcException {
+	ObjectAdapter(OdooCommand command, String modelName, Version serverVersion)
+			throws OdooApiException, XmlRpcException {
 		this.command = command;
 		this.modelName = modelName;
 		this.serverVersion = serverVersion;
@@ -99,11 +100,11 @@ public class ObjectAdapter {
 	 * 
 	 * @param command
 	 *            Command object to use
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 *             If the model could not be validated
 	 */
 	@SuppressWarnings("unchecked")
-	synchronized void validateModelExists() throws OpeneERPApiException {
+	synchronized void validateModelExists() throws OdooApiException {
 		// If you can't find the object name, reload the cache. Somebody may
 		// have added a new module after the cache was created
 		// Ticket #1 from sourceforge
@@ -116,19 +117,19 @@ public class ObjectAdapter {
 					objectNameCache.add(((HashMap<String, Object>) row).get("model").toString());
 				}
 			} catch (XmlRpcException e) {
-				throw new OpeneERPApiException("Could not validate model name: ", e);
+				throw new OdooApiException("Could not validate model name: ", e);
 			}
 		}
 
 		if (objectNameCache.indexOf(modelName) < 0)
-			throw new OpeneERPApiException("Could not find model with name '" + modelName + "'");
+			throw new OdooApiException("Could not find model with name '" + modelName + "'");
 	}
 
 	static void clearModelNameCache() {
 		objectNameCache.clear();
 	}
 
-	private void checkSignalExists(String signal) throws OpeneERPApiException {
+	private void checkSignalExists(String signal) throws OdooApiException {
 		// If you can't find the signal, reload the cache. Somebody may have
 		// added a new module after the cache was created
 		String signalCombo = modelName + "#" + signal;
@@ -145,12 +146,12 @@ public class ObjectAdapter {
 
 		// If still not found, this is an error...
 		if (!signalCache.contains(signalCombo))
-			throw new OpeneERPApiException(
+			throw new OdooApiException(
 					"Could not find signal with name '" + signal + "' for object '" + modelName + "'");
 	}
 
 	@SuppressWarnings("unchecked")
-	private static void refreshSignalCache(OpenERPCommand command) throws OpeneERPApiException {
+	private static void refreshSignalCache(OdooCommand command) throws OdooApiException {
 		signalCache.clear();
 		try {
 			Object[] ids = command.searchObject("workflow.transition", new Object[] {});
@@ -167,7 +168,7 @@ public class ObjectAdapter {
 				signalCache.add(obj + "#" + sig);
 			}
 		} catch (XmlRpcException e) {
-			throw new OpeneERPApiException("Could not validate signal name: ", e);
+			throw new OdooApiException("Could not validate signal name: ", e);
 		}
 	}
 
@@ -179,9 +180,9 @@ public class ObjectAdapter {
 	 *            Fields that should be included in the row definition
 	 * @return An empty row with the specified fields
 	 * @throws XmlRpcException
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 */
-	public Row getNewRow(FieldCollection fields) throws OpeneERPApiException {
+	public Row getNewRow(FieldCollection fields) throws OdooApiException {
 		return new Row(new HashMap<String, Object>(), fields);
 	}
 
@@ -195,9 +196,9 @@ public class ObjectAdapter {
 	 *            Fields that should be included in the row definition
 	 * @return An empty row with the specified fields
 	 * @throws XmlRpcException
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 */
-	public Row getNewRow(String[] fields) throws XmlRpcException, OpeneERPApiException {
+	public Row getNewRow(String[] fields) throws XmlRpcException, OdooApiException {
 		return getNewRow(getFields(fields));
 	}
 
@@ -211,9 +212,9 @@ public class ObjectAdapter {
 	 *            List of fields to fetch data for
 	 * @return A collection of rows for an Odoo object
 	 * @throws XmlRpcException
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 */
-	public RowCollection readObject(Object[] ids, String[] fields) throws XmlRpcException, OpeneERPApiException {
+	public RowCollection readObject(Object[] ids, String[] fields) throws XmlRpcException, OdooApiException {
 
 		// Faster to do read existing fields that to do a server call again
 		FieldCollection fieldCol = new FieldCollection();
@@ -284,10 +285,10 @@ public class ObjectAdapter {
 	public FieldCollection getFields(String[] filterFields) throws XmlRpcException {
 		FieldCollection collection = new FieldCollection();
 
-		HashMap<String, Object> fields = command.getFields(modelName, filterFields);
+		Map<String, Object> fields = command.getFields(modelName, filterFields);
 
 		for (String fieldName : fields.keySet()) {
-			HashMap<String, Object> fieldDetails = (HashMap<String, Object>) fields.get(fieldName);
+			Map<String, Object> fieldDetails = (Map<String, Object>) fields.get(fieldName);
 			collection.add(new Field(fieldName, fieldDetails));
 		}
 
@@ -303,9 +304,9 @@ public class ObjectAdapter {
 	 *            FilterCollection containing the specified filters
 	 * @return A validated filter Object[] correctly formatted for use by the
 	 *         Odoo search function
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 */
-	public Object[] validateFilters(final FilterCollection filters) throws OpeneERPApiException {
+	public Object[] validateFilters(final FilterCollection filters) throws OdooApiException {
 
 		if (filters == null)
 			return new Object[0];
@@ -327,7 +328,7 @@ public class ObjectAdapter {
 			// Is a comparison filter
 			Object[] filterObjects = (Object[]) filter;
 			if (!(filter instanceof Object[]) || filterObjects.length != 3) {
-				throw new OpeneERPApiException("Filters aren't in the correct format.  Please read the Odoo help.");
+				throw new OdooApiException("Filters aren't in the correct format.  Please read the Odoo help.");
 			}
 
 			String fieldName = filterObjects[0].toString();
@@ -338,12 +339,12 @@ public class ObjectAdapter {
 
 			// Can't search on calculated fields
 			if (fld != null && fld.getFunc_method()) {
-				throw new OpeneERPApiException("Can not search on function field " + fieldName);
+				throw new OdooApiException("Can not search on function field " + fieldName);
 			}
 
 			// Fix the value type if required for the Odoo server
 			if (!"id".equals(fieldName) && fld == null) {
-				throw new OpeneERPApiException("Unknow filter field " + fieldName);
+				throw new OdooApiException("Unknow filter field " + fieldName);
 			} else if ("is null".equals(comparison)) {
 				comparison = "=";
 				value = false;
@@ -402,7 +403,7 @@ public class ObjectAdapter {
 		return processedFilters.toArray(new Object[processedFilters.size()]);
 	}
 
-	private Object convertToBoolean(Object value) throws OpeneERPApiException {
+	private Object convertToBoolean(Object value) throws OdooApiException {
 		if (value instanceof String) {
 			char firstchar = value.toString().toLowerCase().charAt(0);
 			if (firstchar == '1' || firstchar == 'y' || firstchar == 't') {
@@ -410,7 +411,7 @@ public class ObjectAdapter {
 			} else if (firstchar == '0' || firstchar == 'n' || firstchar == 'f') {
 				return false;
 			} else {
-				throw new OpeneERPApiException("Unknown boolean " + value.toString());
+				throw new OdooApiException("Unknown boolean " + value.toString());
 			}
 		}
 		return value;
@@ -425,7 +426,7 @@ public class ObjectAdapter {
 		return null;
 	}
 
-	private Object[] fixImportData(Row inputRow) throws OpeneERPApiException, XmlRpcException {
+	private Object[] fixImportData(Row inputRow) throws OdooApiException, XmlRpcException {
 
 		// +1 because we need to include the ID field
 		Object[] outputRow = new Object[inputRow.getFields().size() + 1];
@@ -481,7 +482,7 @@ public class ObjectAdapter {
 					}
 				}
 				if (!validValue)
-					throw new OpeneERPApiException(
+					throw new OdooApiException(
 							"Could not find a valid value for section field " + fieldName + " with value " + value);
 				break;
 			case MANY2MANY:
@@ -510,7 +511,7 @@ public class ObjectAdapter {
 						if (idToName.containsKey(singleID))
 							newValue = newValue + "," + idToName.get(singleID);
 						else
-							throw new OpeneERPApiException(
+							throw new OdooApiException(
 									"Could not find " + fld.getRelation() + " with ID " + singleID);
 				} else {
 					// Object[] of values -- default
@@ -518,7 +519,7 @@ public class ObjectAdapter {
 						if (idToName.containsKey(singleID.toString()))
 							newValue = newValue + "," + idToName.get(singleID.toString());
 						else
-							throw new OpeneERPApiException(
+							throw new OdooApiException(
 									"Could not find " + fld.getRelation() + " with ID " + singleID.toString());
 				}
 				outputRow[columnIndex] = newValue.substring(1);
@@ -565,9 +566,9 @@ public class ObjectAdapter {
 	 *            Rows to import.
 	 * @return If the import was successful
 	 * @throws XmlRpcException
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 */
-	public boolean importData(RowCollection rows) throws OpeneERPApiException, XmlRpcException {
+	public boolean importData(RowCollection rows) throws OdooApiException, XmlRpcException {
 
 		// Workaround. Odoo7 bug where old and new rows can't be sent
 		// together using the import_data or load function
@@ -610,7 +611,7 @@ public class ObjectAdapter {
 	}
 
 	private void importDataLegacy(RowCollection rows, Object[][] importRows)
-			throws XmlRpcException, OpeneERPApiException {
+			throws XmlRpcException, OdooApiException {
 
 		String[] targetFieldList = getFieldListForImport(rows.get(0).getFields());
 
@@ -619,11 +620,11 @@ public class ObjectAdapter {
 		// Should return the number of rows committed. If there was an
 		// error, it returns -1
 		if ((Integer) result[0] != importRows.length)
-			throw new OpeneERPApiException(result[2].toString() + "\nRow :" + result[1].toString() + "");
+			throw new OdooApiException(result[2].toString() + "\nRow :" + result[1].toString() + "");
 	}
 
 	@SuppressWarnings("unchecked")
-	private void importDataV7(RowCollection rows, Object[][] importRows) throws XmlRpcException, OpeneERPApiException {
+	private void importDataV7(RowCollection rows, Object[][] importRows) throws XmlRpcException, OdooApiException {
 
 		String[] targetFieldList = getFieldListForImport(rows.get(0).getFields());
 
@@ -646,16 +647,16 @@ public class ObjectAdapter {
 			importRows = newImportRows;
 		}
 
-		HashMap<String, Object> results = command.Load(modelName, targetFieldList, importRows);
+		Map<String, Object> results = command.load(modelName, targetFieldList, importRows);
 
 		if (results.get("ids") instanceof Boolean) {
 			// There was an error. ids is false and not an Object[]
 			Map<String, Object>[] messages = (Map<String, Object>[]) results.get("messages");
-			String errorString = Arrays.stream(messages)
+			String errorString = Arrays.stream(messages) // NOSONAR
 					.flatMap(m -> m.entrySet().stream())
 					.map(e -> String.join(":", e.getKey(), e.getValue().toString()))
 					.collect(Collectors.joining("\n"));
-			throw new OpeneERPApiException(errorString);
+			throw new OdooApiException(errorString);
 		}
 
 		// Should be in the same order as it was passed in
@@ -674,9 +675,9 @@ public class ObjectAdapter {
 	 *            applied
 	 * @return The number of record count.
 	 * @throws XmlRpcException
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 */
-	public int getObjectCount(FilterCollection filter) throws XmlRpcException, OpeneERPApiException {
+	public int getObjectCount(FilterCollection filter) throws XmlRpcException, OdooApiException {
 		Object[] preparedFilters = validateFilters(filter);
 		return Integer.parseInt(command.searchObject(modelName, preparedFilters, -1, -1, null, true).toString());
 	}
@@ -692,10 +693,10 @@ public class ObjectAdapter {
 	 *            List of fields to return data for
 	 * @return A collection of rows for an Odoo object
 	 * @throws XmlRpcException
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 */
 	public RowCollection searchAndReadObject(FilterCollection filter, String[] fields)
-			throws XmlRpcException, OpeneERPApiException {
+			throws XmlRpcException, OdooApiException {
 		return searchAndReadObject(filter, fields, -1, -1, "");
 	}
 
@@ -716,10 +717,10 @@ public class ObjectAdapter {
 	 *            Field name to order on
 	 * @return A collection of rows for an Odoo object
 	 * @throws XmlRpcException
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 */
 	public RowCollection searchAndReadObject(final FilterCollection filter, final String[] fields, int offset,
-			int limit, String order) throws XmlRpcException, OpeneERPApiException {
+			int limit, String order) throws XmlRpcException, OdooApiException {
 
 		String[] fieldArray = fields == null ? new String[] {} : fields;
 		Object[] preparedFilters = validateFilters(filter);
@@ -808,11 +809,11 @@ public class ObjectAdapter {
 	 *            Only changed values will be submitted to the database.
 	 * @return An array of logicals. One for each row to indicate if the update
 	 *         was successful
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 * @throws XmlRpcException
 	 */
 	public Boolean[] writeObject(final RowCollection rows, final boolean changesOnly)
-			throws OpeneERPApiException, XmlRpcException {
+			throws OdooApiException, XmlRpcException {
 		Boolean[] returnValues = new Boolean[rows.size()];
 
 		for (int i = 0; i < rows.size(); i++)
@@ -830,15 +831,15 @@ public class ObjectAdapter {
 	 * @param changesOnly
 	 *            Only changed values will be submitted to the database.
 	 * @return If the update was successful
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 * @throws XmlRpcException
 	 */
-	public boolean writeObject(final Row row, boolean changesOnly) throws OpeneERPApiException {
+	public boolean writeObject(final Row row, boolean changesOnly) throws OdooApiException {
 
 		Object idObj = row.get("id");
 
 		if (idObj == null || Integer.parseInt(idObj.toString()) <= 0)
-			throw new OpeneERPApiException("Please set the id field with the database ID of the object");
+			throw new OdooApiException("Please set the id field with the database ID of the object");
 
 		int id = Integer.parseInt(idObj.toString());
 
@@ -856,7 +857,7 @@ public class ObjectAdapter {
 			return success;
 
 		} catch (XmlRpcException e) {
-			throw new OpeneERPApiException(e);
+			throw new OdooApiException(e);
 		}
 
 	}
@@ -883,17 +884,17 @@ public class ObjectAdapter {
 	 * 
 	 * @param row
 	 *            Data row read data from to create the Object
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 * @throws XmlRpcException
 	 */
-	public void createObject(final Row row) throws OpeneERPApiException, XmlRpcException {
+	public void createObject(final Row row) throws OdooApiException, XmlRpcException {
 
 		HashMap<String, Object> valueList = new HashMap<String, Object>();
 		for (Field fld : row.getFields())
 			valueList.put(fld.getName(), formatValueForWrite(fld, row.get(fld)));
 
 		if (valueList.size() == 0)
-			throw new OpeneERPApiException("Row doesn't have any fields to update");
+			throw new OdooApiException("Row doesn't have any fields to update");
 
 		Object id = command.createObject(modelName, valueList);
 
@@ -913,57 +914,65 @@ public class ObjectAdapter {
 	 *            Additional parameters that will be passed to the object
 	 * @return A field collection
 	 * @throws XmlRpcException
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 */
-	@SuppressWarnings("unchecked")
 	public FieldCollection callFieldsFunction(String functionName, Object[] parameters)
-			throws XmlRpcException, OpeneERPApiException {
-		Object[] results = command.callObjectFunction(modelName, functionName, parameters);
+			throws XmlRpcException, OdooApiException {
+		Response response = command.callObjectFunction(modelName, functionName, parameters);
 
-		// Go through the first row and fetch the fields
+		return callFieldsFunction(response);
+	}
+
+	@SuppressWarnings("unchecked")
+	private FieldCollection callFieldsFunction(Response response) {
+		if (!response.isSuccessful()) {
+			return new FieldCollection();
+		}
+
 		FieldCollection fieldCol = new FieldCollection();
+
+		Object[] results = response.getResponseObjectAsArray();
+		// Go through the first row and fetch the fields name, description and
+		// type
 		if (results.length > 0) {
-			HashMap<String, Object> rowMap = (HashMap<String, Object>) results[0];
-			for (String field : rowMap.keySet()) {
-				HashMap<String, Object> fldDetails = null;
-
-				if (rowMap.get(field) instanceof HashMap<?, ?>) {
-					try {
-						fldDetails = (HashMap<String, Object>) rowMap.get(field);
-					} catch (Exception e) {
-						fldDetails = null;
-					}
-				}
-
-				if (fldDetails == null)
+			Map<String, Object> rowMap = (Map<String, Object>) results[0];
+			for (Entry<String, Object> entry : rowMap.entrySet()) {
+				Map<String, Object> fldDetails;
+				if (entry.getValue() instanceof Map<?, ?>) {
+					fldDetails = (Map<String, Object>) entry.getValue();
+				} else {
 					fldDetails = new HashMap<>();
-
-				if (!fldDetails.containsKey("name"))
-					fldDetails.put("name", field);
-				if (!fldDetails.containsKey("description"))
-					fldDetails.put("description", field);
-
-				if (!fldDetails.containsKey("type")) {
-					@SuppressWarnings({ "rawtypes" })
-					Class type = rowMap.get(field).getClass();
-					if (type == String.class) {
-						fldDetails.put("type", "char");
-					} else if (type == Date.class) {
-						fldDetails.put("type", "date");
-					} else if (type == Boolean.class) {
-						fldDetails.put("type", "boolean");
-					} else if (type == Double.class) {
-						fldDetails.put("type", "float");
-					} else if (type == Integer.class) {
-						fldDetails.put("type", "integer");
-					} else
-						fldDetails.put("type", "char");
 				}
-				fieldCol.add(new Field(field, fldDetails));
+
+				completeFieldDetailsIfNecessary(entry, fldDetails);
+				fieldCol.add(new Field(entry.getKey(), fldDetails));
 			}
 		}
 
 		return fieldCol;
+	}
+
+	private void completeFieldDetailsIfNecessary(Entry<String, Object> entry, Map<String, Object> fldDetails) {
+		if (!fldDetails.containsKey("name"))
+			fldDetails.put("name", entry.getKey());
+		if (!fldDetails.containsKey("description"))
+			fldDetails.put("description", entry.getKey());
+
+		if (!fldDetails.containsKey("type")) {
+			Class<?> type = entry.getValue().getClass();
+			if (type == String.class) {
+				fldDetails.put("type", "char");
+			} else if (type == Date.class) {
+				fldDetails.put("type", "date");
+			} else if (type == Boolean.class) {
+				fldDetails.put("type", "boolean");
+			} else if (type == Double.class) {
+				fldDetails.put("type", "float");
+			} else if (type == Integer.class) {
+				fldDetails.put("type", "integer");
+			} else
+				fldDetails.put("type", "char");
+		}
 	}
 
 	/**
@@ -979,17 +988,24 @@ public class ObjectAdapter {
 	 *            An option field collection to use. A new one will be built by
 	 *            inspecting the first row if it isn't specified (null).
 	 * @return A row collection with the data
-	 * @throws XmlRpcException
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 */
 	public RowCollection callFunction(String functionName, Object[] parameters, FieldCollection fieldCol)
-			throws XmlRpcException, OpeneERPApiException {
-		Object[] results = command.callObjectFunction(modelName, functionName, parameters);
+			throws OdooApiException {
+		Response response = command.callObjectFunction(modelName, functionName, parameters);
 
-		if (fieldCol == null)
-			fieldCol = callFieldsFunction(functionName, parameters);
+		if (!response.isSuccessful()) {
+			String message = "Failed to call function '" + functionName + "' with parameters '"
+					+ Arrays.deepToString(parameters) + "' and FieldCollection '" + fieldCol + "' on object '"
+					+ modelName + "'";
+			throw new OdooApiException(message, response.getErrorCause());
+		}
 
-		return new RowCollection(results, fieldCol);
+		Object[] results = response.getResponseObjectAsArray();
+
+		FieldCollection fieldCollection = fieldCol != null ? fieldCol : callFieldsFunction(response);
+
+		return new RowCollection(results, fieldCollection);
 	}
 
 	/**
@@ -1002,9 +1018,9 @@ public class ObjectAdapter {
 	 * @param signal
 	 *            Signal name to send
 	 * @throws XmlRpcException
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 */
-	public void executeWorkflow(Row row, String signal) throws XmlRpcException, OpeneERPApiException {
+	public void executeWorkflow(Row row, String signal) throws XmlRpcException, OdooApiException {
 		// Sanity check
 		checkSignalExists(signal);
 

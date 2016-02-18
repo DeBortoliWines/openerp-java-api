@@ -19,12 +19,12 @@ public class ObjectAdapterTest {
 
 	private final class TestAdapter extends ObjectAdapter {
 
-		public TestAdapter() throws OpeneERPApiException, XmlRpcException {
+		public TestAdapter() throws OdooApiException, XmlRpcException {
 			super(null, null, null);
 		}
 
 		@Override
-		synchronized void validateModelExists() throws OpeneERPApiException {
+		synchronized void validateModelExists() throws OdooApiException {
 			validated = true;
 		}
 
@@ -34,7 +34,7 @@ public class ObjectAdapterTest {
 		}
 	}
 
-	private abstract class AbstractTestCommand extends OpenERPCommand {
+	private abstract class AbstractTestCommand extends OdooCommand {
 		boolean searchCalledOnce = false;
 		boolean searchCalledTwiceOrMore = false;
 		boolean readCalledOnce = false;
@@ -87,7 +87,7 @@ public class ObjectAdapterTest {
 
 		Throwable thrown = catchThrowable(() -> new ObjectAdapter(new TestCommand1(), OTHER_MODEL_NAME, null));
 		softAssertions.assertThat(thrown).as("Exception thrown while trying to create adapter")
-				.isInstanceOf(OpeneERPApiException.class)
+				.isInstanceOf(OdooApiException.class)
 				.hasMessage("Could not find model with name '" + OTHER_MODEL_NAME + "'");
 		// Don't forget to call SoftAssertions global verification !
 		softAssertions.assertAll();
@@ -160,7 +160,7 @@ public class ObjectAdapterTest {
 		// to collect all failing assertions in one go
 		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(thrown).as("Exception thrown for invalid signal name")
-				.isInstanceOf(OpeneERPApiException.class).hasMessage("Could not find signal with name '"
+				.isInstanceOf(OdooApiException.class).hasMessage("Could not find signal with name '"
 						+ OTHER_SIGNAL_NAME + "' for object '" + TEST_MODEL_NAME + "'");
 
 		// Wrong model
@@ -169,7 +169,7 @@ public class ObjectAdapterTest {
 		Throwable thrown2 = catchThrowable(() -> adapter2.executeWorkflow(row2, TEST_SIGNAL_NAME));
 
 		softAssertions.assertThat(thrown2).as("Exception thrown for invalid model name")
-				.isInstanceOf(OpeneERPApiException.class).hasMessage("Could not find signal with name '"
+				.isInstanceOf(OdooApiException.class).hasMessage("Could not find signal with name '"
 						+ TEST_SIGNAL_NAME + "' for object '" + OTHER_MODEL_NAME + "'");
 
 		// Don't forget to call SoftAssertions global verification !
