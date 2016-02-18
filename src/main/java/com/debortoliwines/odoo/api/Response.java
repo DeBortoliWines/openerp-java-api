@@ -2,20 +2,27 @@ package com.debortoliwines.odoo.api;
 
 public class Response {
 
-	private boolean isSuccessful;
-	private Exception errorCause;
-	private Object responseObject;
+	private final boolean isSuccessful;
+	private final Exception errorCause;
+	private final Object responseObject;
+	private final Object[] responseObjectAsArray;
 
-	public Response(Exception errorCause) {
+	public Response(final Exception errorCause) {
 		this.isSuccessful = false;
 		this.errorCause = errorCause;
 		this.responseObject = null;
+		this.responseObjectAsArray = new Object[0];
 	}
 
-	public Response(Object responseObject) {
+	public Response(final Object responseObject) {
 		this.isSuccessful = true;
 		this.errorCause = null;
 		this.responseObject = responseObject;
+		if (responseObject instanceof Object[]) {
+			this.responseObjectAsArray = (Object[]) responseObject;
+		} else {
+			this.responseObjectAsArray = new Object[] { responseObject };
+		}
 	}
 
 	public boolean isSuccessful() {
@@ -31,10 +38,6 @@ public class Response {
 	}
 
 	public Object[] getResponseObjectAsArray() {
-		if (responseObject instanceof Object[]) {
-			return (Object[]) responseObject;
-		} else {
-			return new Object[] { responseObject };
-		}
+		return responseObjectAsArray;
 	}
 }
