@@ -637,36 +637,73 @@ public class ObjectAdapter {
 		
 	}
 	
-	private Object formatValueForWrite(Field fld, Object value){
-		if (value == null)
-			return false;
-		
+	private Object formatValueForWrite(Field fld, Object value) {
+		Object result;
+		if (value == null) {
+			result = false;
+		} else {
+			result = formatValueBasedOnFieldTypeForWrite(fld, value);
+		}
+		return result;
+
+	}
+
+	private Object formatValueBasedOnFieldTypeForWrite(Field fld, Object value) {
+		Object result;
 		switch (fld.getType()) {
 		case BOOLEAN:
-			value = (Boolean) value;
+			result = value;
 			break;
 		case FLOAT:
-			value = Double.parseDouble(value.toString());
-			break;
-		case MANY2ONE:
-			value = Double.valueOf(value.toString()).intValue();
+			result = Double.valueOf(value.toString());
 			break;
 		case MANY2MANY:
-			// For write, otherwise it is a comma separated list of strings used by import
-			if (value instanceof Object[])
-				value = new Object [][]{new Object[] {6,0, (Object[]) value}};
+			result = formatManyToManyForWrite(value);
 			break;
+		case MANY2ONE:
 		case ONE2MANY:
 		case INTEGER:
-			// To make sure 1.0 is converted to 1
-			value = Double.valueOf(value.toString()).intValue();
+			result = formatIntegerForWrite(value);
+			break;
+		case DATE:
+			result = formatDateForWrite(value);
+			break;
+		case DATETIME:
+			result = formatDateTimeForWrite(value);
 			break;
 		default:
-			value = value.toString();
+			result = value.toString();
 			break;
 		}
-		
-		return value; 
+		return result;
+	}
+
+	private Object formatManyToManyForWrite(Object value) {
+		// For write, otherwise it is a comma separated list of strings used
+		// by import
+		if (value instanceof Object[]) {
+			Object[] tmp = new Object[] { 6, 0, (Object[]) value };
+			return new Object[][] { tmp };
+		} else {
+			return value;
+		}
+	}
+
+	private Object formatIntegerForWrite(Object value) {
+		// To make sure 1.0 is converted to 1
+		return Double.valueOf(value.toString()).intValue();
+	}
+
+	private Object formatDateTimeForWrite(Object value) {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+		return sdf.format(value);
+	}
+
+	private Object formatDateForWrite(Object value) {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+		return sdf.format(value);
 	}
 	
 	/**
