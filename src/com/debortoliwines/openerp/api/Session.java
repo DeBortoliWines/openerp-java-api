@@ -219,7 +219,7 @@ public class Session {
 	 * @throws XmlRpcException
 	 */
 	public Version getServerVersion() throws XmlRpcException{
-	  return OpenERPXmlRpcProxy.getServerVersion(host, port);
+	  return OpenERPXmlRpcProxy.getServerVersion(protocol, host, port);
 	}
 	
 	/**
