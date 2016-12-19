@@ -21,6 +21,7 @@ package com.debortoliwines.odoo.api;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 /***
  * Provides OpenERP field properties like data types, selection fields etc.
@@ -39,9 +40,9 @@ public class Field {
 	}
 	
 	private final String name;
-	private final HashMap<String, Object> openERPFieldData;
+	private final Map<String, Object> openERPFieldData;
 	
-	public Field(String fieldName, HashMap<String, Object> openERPFieldData){
+	public Field(String fieldName, Map<String, Object> openERPFieldData) {
 		this.openERPFieldData = openERPFieldData;
 		this.name = fieldName;
 	}

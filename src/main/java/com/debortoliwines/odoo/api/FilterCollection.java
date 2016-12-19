@@ -59,14 +59,14 @@ public class FilterCollection {
 	 * @param fieldName Name of the model that should be filtered on
 	 * @param comparison For example =, !=, >, >=, <, <=, like, ilike, in, not in, child_of, parent_left, parent_right
 	 * @param value value that will be compared to 'fieldName' using the 'comparison'
-	 * @throws OpeneERPApiException 
+	 * @throws OdooApiException 
 	 */
-	public void add(int index, String fieldName, String comparison, Object value) throws OpeneERPApiException{
+	public void add(int index, String fieldName, String comparison, Object value) throws OdooApiException{
 		if (fieldName == null)
-			throw new OpeneERPApiException("First filter parameter is mandatory.  Please read the OpenERP help.");
+			throw new OdooApiException("First filter parameter is mandatory.  Please read the OpenERP help.");
 		
 		if (comparison == null)
-			throw new OpeneERPApiException("Second filter parameter is mandatory.  Please read the OpenERP help.");
+			throw new OdooApiException("Second filter parameter is mandatory.  Please read the OpenERP help.");
 		
 		Object [] filter = new Object[] {fieldName,comparison,value};
 		filters.add(index, filter);
@@ -77,9 +77,9 @@ public class FilterCollection {
 	 * @param fieldName Name of the model that should be filtered on
 	 * @param comparison For example =, !=, >, >=, <, <=, like, ilike, in, not in, child_of, parent_left, parent_right
 	 * @param value value that will be compared to 'fieldName' using the 'comparison'
-	 * @throws OpeneERPApiException 
+	 * @throws OdooApiException 
 	 */
-	public void add(String fieldName, String comparison, Object value) throws OpeneERPApiException{
+	public void add(String fieldName, String comparison, Object value) throws OdooApiException{
 		add(filters.size(), fieldName, comparison, value);
 	}
 	

@@ -35,7 +35,7 @@ public class RowCollection extends ArrayList<Row> {
 	}
 
 	@SuppressWarnings("unchecked")
-	public RowCollection(Object [] openERPResultSet, FieldCollection fields) throws OpeneERPApiException{
+	public RowCollection(Object [] openERPResultSet, FieldCollection fields) throws OdooApiException{
 		for (int i = 0; i < openERPResultSet.length; i++){
 			Row row = new Row((HashMap<String, Object>) openERPResultSet[i], fields);
 			this.add(row);

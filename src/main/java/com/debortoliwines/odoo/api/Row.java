@@ -44,9 +44,9 @@ public class Row {
 	 * Default constructor
 	 * @param openERPResult The HashMap object returned from readObject. containing all data for this row
 	 * @param fields FieldCollection that this row holds data for.
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 */
-	public Row (HashMap<String, Object> openERPResult, FieldCollection fields) throws OpeneERPApiException{
+	public Row (HashMap<String, Object> openERPResult, FieldCollection fields) throws OdooApiException{
 		this.openERPResult = openERPResult;
 		this.fields = fields;
 		
@@ -162,9 +162,9 @@ public class Row {
 	 * Updates row field values
 	 * @param fieldName Name of the field to update
 	 * @param value New value that must be associated with the field
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 */
-	public void put(String fieldName, Object value) throws OpeneERPApiException {
+	public void put(String fieldName, Object value) throws OdooApiException {
 		if (fieldName.equals("id")){
 			openERPResult.put(fieldName, value);
 			return;
@@ -172,7 +172,7 @@ public class Row {
 		
 		Field fld = getField(fieldName);
 		if (fld == null)
-			throw new OpeneERPApiException("Field '" + fieldName + "' was not found in row");
+			throw new OdooApiException("Field '" + fieldName + "' was not found in row");
 		
 		Field.FieldType fieldType = fld.getType();
 		
@@ -206,12 +206,12 @@ public class Row {
 	 * @param fieldName Name of the many to many field to update
 	 * @param values Object [] of ids to update the many2many field with
 	 * @param append If the values should be added to the existing values.  If not, the value is replaced.
-	 * @throws OpeneERPApiException
+	 * @throws OdooApiException
 	 */
-	public void putMany2ManyValue(String fieldName, Object [] values, boolean append) throws OpeneERPApiException{
+	public void putMany2ManyValue(String fieldName, Object [] values, boolean append) throws OdooApiException{
 		Field fld = getField(fieldName);
 		if (fld.getType() != FieldType.MANY2MANY)
-			throw new OpeneERPApiException("Field '" + fieldName + "' is not a many2many field");
+			throw new OdooApiException("Field '" + fieldName + "' is not a many2many field");
 		
 		Object currentValue = get(fieldName);
 		

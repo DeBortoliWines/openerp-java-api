@@ -1,7 +1,7 @@
 /*
  *   Copyright 2011, 2014 De Bortoli Wines Pty Limited (Australia)
  *
- *   This file is part of OpenERPJavaAPI.
+ *   This file is part of OdooJavaAPI.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -20,27 +20,25 @@
 package com.debortoliwines.odoo.api;
 
 /**
- * Exception class for OpenERP API errors
+ * Exception class for Odoo API errors
+ * 
  * @author Pieter van der Merwe
  *
  */
-public class OpeneERPApiException extends Exception {
+public class OdooApiException extends Exception {
 
 	private static final long serialVersionUID = 3148147969903379455L;
 
-	public OpeneERPApiException(String message) {
+	public OdooApiException(String message) {
 		super(message);
-		// TODO Auto-generated constructor stub
 	}
 
-	public OpeneERPApiException(Throwable cause) {
+	public OdooApiException(Throwable cause) {
 		super(cause);
-		// TODO Auto-generated constructor stub
 	}
 
-	public OpeneERPApiException(String message, Throwable cause) {
+	public OdooApiException(String message, Throwable cause) {
 		super(message, cause);
-		// TODO Auto-generated constructor stub
 	}
 
 }
