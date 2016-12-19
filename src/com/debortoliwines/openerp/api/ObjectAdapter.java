@@ -21,8 +21,12 @@ package com.debortoliwines.openerp.api;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.TimeZone;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.xmlrpc.XmlRpcException;
 
@@ -563,13 +567,21 @@ public class ObjectAdapter {
       
       // There was an error.  ids is false and not an Object[]
       if (results.get("ids") instanceof Boolean){
+
         StringBuilder errorString = new StringBuilder();
         Object [] messages = (Object[]) results.get("messages");
         for (Object mes : messages){
           HashMap<String, Object> messageHash = (HashMap<String, Object>) mes;
-          errorString.append("Row: " + messageHash.get("record").toString()
-              + " field: " +  messageHash.get("field").toString() 
-              + " ERROR: " + messageHash.get("message").toString() + "\n");
+          if (messageHash.get("record") != null) {
+              errorString.append("Row: " + messageHash.get("record").toString());
+          }
+          if (messageHash.get("field") != null) {
+              errorString.append(" field: " + messageHash.get("field").toString());
+          }
+          if (messageHash.get("message") != null) {
+              errorString.append(" ERROR: " + messageHash.get("message").toString());
+          }
+          errorString.append("\n");
         }
         throw new OpeneERPApiException(errorString.toString());
       }
