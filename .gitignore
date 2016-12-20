@@ -14,3 +14,10 @@ demodb.properties
 # Intellij IDEA stuff
 .idea/*
 *.iml
+
+# Netbeans stuff
+nbactions.xml
+nbproject/
+
+# OS stuff
+.directory

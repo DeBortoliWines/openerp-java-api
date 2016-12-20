@@ -45,7 +45,7 @@ public class ObjectAdapterTest {
 		}
 
 		@Override
-		public Object[] searchObject(String objectName, Object[] filter) throws XmlRpcException {
+		public Response searchObject(String objectName, Object[] filter) {
 			// If already called once...
 			if (searchCalledOnce) {
 				searchCalledTwiceOrMore = true;
