@@ -50,7 +50,7 @@ public class OdooCommand {
      * @param objectName The object name to do a search for
      * @param filter A filter array that contains a list of filters to be
      * applied.
-     * @return Response that need to be parsed from the calling method to check 
+     * @return Response that need to be parsed from the calling method to check
      * if successful and then adapt the result as an array.
      */
     public Response searchObject(String objectName, Object[] filter) {
@@ -69,7 +69,8 @@ public class OdooCommand {
      * @param order Field name to order on
      * @param count If the count should be returned, in stead of the IDs
      * @return If count = true, a integer is returned, otherwise a Response is
-     * returned and could be parsed as Object[] of IDs if response is successfull
+     * returned and could be parsed as Object[] of IDs if response is
+     * successfull
      */
     public Response searchObject(String objectName, Object[] filter, int offset, int limit, String order, boolean count) {
         Object offsetParam = offset < 0 ? false : offset;
@@ -95,8 +96,16 @@ public class OdooCommand {
      */
     @SuppressWarnings("unchecked")
     public Map<String, Object> getFields(String objectName, String[] filterFields) throws XmlRpcException {
-        return (Map<String, Object>) session.executeCommand(objectName, "fields_get",
-                new Object[]{filterFields, session.getContext()});
+        Map<String, Object> fieldsArray;
+        if (this.session.getServerVersion().getMajor() >= 10 ) {
+            fieldsArray = (Map<String, Object>) session.executeCommand(objectName, "fields_get",
+                    new Object[]{filterFields});
+        } else {
+            fieldsArray = (Map<String, Object>) session.executeCommand(objectName, "fields_get",
+                    new Object[]{filterFields, session.getContext()});
+        }
+
+        return fieldsArray;
     }
 
     /**
@@ -110,7 +119,14 @@ public class OdooCommand {
      * @throws XmlRpcException
      */
     public Object[] readObject(String objectName, Object[] ids, String[] fields) throws XmlRpcException {
-        return (Object[]) session.executeCommand(objectName, "read", new Object[]{ids, fields, session.getContext()});
+        Object[] readResult ;
+        if (this.session.getServerVersion().getMajor() >= 10 ) {
+            readResult = (Object[]) session.executeCommand(objectName, "read", new Object[]{ids, fields});
+        } else {
+            readResult = (Object[]) session.executeCommand(objectName, "read", new Object[]{ids, fields, session.getContext()});
+        }
+        
+        return readResult;
     }
 
     /**
@@ -139,6 +155,7 @@ public class OdooCommand {
      * @throws XmlRpcException
      */
     public Object[] importData(String objectName, String[] fieldList, Object[][] rows) throws XmlRpcException {
+        //TODO : deal with v10 version and context
         return (Object[]) session.executeCommand(objectName, "import_data", new Object[]{fieldList, rows, "init", "", false, session.getContext()});
     }
 
@@ -182,7 +199,16 @@ public class OdooCommand {
      * @throws XmlRpcException
      */
     public Object createObject(String objectName, Map<String, Object> values) throws XmlRpcException {
-        return session.executeCommand(objectName, "create", new Object[]{values, session.getContext()});
+        Object readResult ;
+        if (this.session.getServerVersion().getMajor() >= 10 ) {
+            readResult = (Object) session.executeCommand(objectName, "create", new Object[]{values});
+        } else {
+            readResult = (Object) session.executeCommand(objectName, "create", new Object[]{values, session.getContext()});
+        }
+        
+        return readResult;
+        
+        
     }
 
     /**
