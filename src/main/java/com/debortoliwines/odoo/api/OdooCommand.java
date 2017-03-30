@@ -53,7 +53,7 @@ public class OdooCommand {
      * @return Response that need to be parsed from the calling method to check
      * if successful and then adapt the result as an array.
      */
-    public Response searchObject(String objectName, Object[] filter) {
+    public Response searchObject(String objectName, Object[] filter) throws XmlRpcException {
         return (Response) searchObject(objectName, filter, -1, -1, null, false);
     }
 
@@ -72,11 +72,14 @@ public class OdooCommand {
      * returned and could be parsed as Object[] of IDs if response is
      * successfull
      */
-    public Response searchObject(String objectName, Object[] filter, int offset, int limit, String order, boolean count) {
+    public Response searchObject(String objectName, Object[] filter, int offset, int limit, String order, boolean count) throws XmlRpcException {
         Object offsetParam = offset < 0 ? false : offset;
         Object limitParam = limit < 0 ? false : limit;
         Object orderParam = order == null || order.length() == 0 ? false : order;
-        Object[] params = new Object[]{filter, offsetParam, limitParam, orderParam, count};
+        // Before Odoo 10 there's a 'context' parameter between order and count
+        Object[] params = (this.session.getServerVersion().getMajor() < 10)
+                ? new Object[]{filter, offsetParam, limitParam, orderParam, false, count}
+                : new Object[]{filter, offsetParam, limitParam, orderParam, count};
 
         try {
             Response response = new Response(session.executeCommand(objectName, "search", params));
@@ -97,7 +100,7 @@ public class OdooCommand {
     @SuppressWarnings("unchecked")
     public Map<String, Object> getFields(String objectName, String[] filterFields) throws XmlRpcException {
         Map<String, Object> fieldsArray;
-        if (this.session.getServerVersion().getMajor() >= 10 ) {
+        if (this.session.getServerVersion().getMajor() >= 8 ) {
             fieldsArray = (Map<String, Object>) session.executeCommand(objectName, "fields_get",
                     new Object[]{filterFields});
         } else {
@@ -120,7 +123,7 @@ public class OdooCommand {
      */
     public Object[] readObject(String objectName, Object[] ids, String[] fields) throws XmlRpcException {
         Object[] readResult ;
-        if (this.session.getServerVersion().getMajor() >= 10 ) {
+        if (this.session.getServerVersion().getMajor() >= 8 ) {
             readResult = (Object[]) session.executeCommand(objectName, "read", new Object[]{ids, fields});
         } else {
             readResult = (Object[]) session.executeCommand(objectName, "read", new Object[]{ids, fields, session.getContext()});
@@ -200,7 +203,7 @@ public class OdooCommand {
      */
     public Object createObject(String objectName, Map<String, Object> values) throws XmlRpcException {
         Object readResult ;
-        if (this.session.getServerVersion().getMajor() >= 10 ) {
+        if (this.session.getServerVersion().getMajor() >= 8 ) {
             readResult = (Object) session.executeCommand(objectName, "create", new Object[]{values});
         } else {
             readResult = (Object) session.executeCommand(objectName, "create", new Object[]{values, session.getContext()});
