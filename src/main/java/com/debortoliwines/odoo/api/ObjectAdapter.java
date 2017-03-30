@@ -586,10 +586,9 @@ public class ObjectAdapter {
      * @throws OdooApiException
      */
     public boolean importData(RowCollection rows) throws OdooApiException, XmlRpcException {
-        //TODO : Check the way importdata are handled in v8/v9/
-        // Workaround. Odoo7 bug where old and new rows can't be sent
+        // Workaround: old and new rows can't be sent together
         // together using the import_data or load function
-        if (this.serverVersion.getMajor() >= 7 && this.serverVersion.getMinor() == 0) {
+        if (this.serverVersion.getMajor() >= 7) {
             RowCollection newRows = new RowCollection();
             RowCollection oldRows = new RowCollection();
 
@@ -647,8 +646,8 @@ public class ObjectAdapter {
 
         String[] targetFieldList = getFieldListForImport(rows.get(0).getFields());
 
-        // Workaround Odoo V7 bug. Remove the .id field for new rows.
-        if (this.serverVersion.getMinor() == 0 && !rows.isEmpty() && rows.get(0).getID() == 0) {
+        // Remove the .id field for new rows.
+        if (this.serverVersion.getMajor() >= 7 && !rows.isEmpty() && rows.get(0).getID() == 0) {
             String[] newTargetFieldList = new String[targetFieldList.length - 1];
             for (int i = 1; i < targetFieldList.length; i++) {
                 newTargetFieldList[i - 1] = targetFieldList[i];
