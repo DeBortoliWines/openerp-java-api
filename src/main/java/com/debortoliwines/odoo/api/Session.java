@@ -49,6 +49,7 @@ public class Session {
     private RPCProtocol protocol;
 
     private OdooXmlRpcProxy objectClient;
+    private Version serverVersion;
 
     /**
      * *
@@ -266,7 +267,11 @@ public class Session {
      * @throws XmlRpcException
      */
     public Version getServerVersion() throws XmlRpcException {
-        return OdooXmlRpcProxy.getServerVersion(protocol, host, port);
+        if (serverVersion == null) {
+            // Cache server version
+            serverVersion = OdooXmlRpcProxy.getServerVersion(protocol, host, port);
+        }
+        return serverVersion;
     }
 
     /**
