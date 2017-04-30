@@ -78,7 +78,7 @@ public class OdooCommand {
         Object orderParam = order == null || order.length() == 0 ? false : order;
         // Before Odoo 10 there's a 'context' parameter between order and count
         Object[] params = (this.session.getServerVersion().getMajor() < 10)
-                ? new Object[]{filter, offsetParam, limitParam, orderParam, false, count}
+                ? new Object[]{filter, offsetParam, limitParam, orderParam, session.getContext(), count}
                 : new Object[]{filter, offsetParam, limitParam, orderParam, count};
 
         try {
@@ -204,7 +204,7 @@ public class OdooCommand {
     public Object createObject(String objectName, Map<String, Object> values) throws XmlRpcException {
         Object readResult ;
         if (this.session.getServerVersion().getMajor() >= 8 ) {
-            readResult = (Object) session.executeCommand(objectName, "create", new Object[]{values});
+            readResult = (Object) session.executeCommand(objectName, "create", new Object[]{values, session.getContext()});
         } else {
             readResult = (Object) session.executeCommand(objectName, "create", new Object[]{values, session.getContext()});
         }

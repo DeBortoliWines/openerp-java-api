@@ -25,6 +25,7 @@ import org.apache.xmlrpc.XmlRpcException;
 
 import com.debortoliwines.odoo.api.OdooXmlRpcProxy.RPCProtocol;
 import com.debortoliwines.odoo.api.OdooXmlRpcProxy.RPCServices;
+import java.util.Arrays;
 
 /**
  * *
@@ -235,12 +236,26 @@ public class Session {
         Object[] connectionParams = new Object[]{databaseName, userID, password, objectName, commandName};
 
         // Combine the connection parameters and command parameters
+//        Object[] params;
+//        if ()
         Object[] params = new Object[connectionParams.length + (parameters == null ? 0 : parameters.length)];
         System.arraycopy(connectionParams, 0, params, 0, connectionParams.length);
 
         if (parameters != null && parameters.length > 0) {
             System.arraycopy(parameters, 0, params, connectionParams.length, parameters.length);
         }
+        if (this.getServerVersion().getMajor() == 9 && this.context.size() > 0) {
+            Integer initial_length = params.length;
+            params = Arrays.copyOf(params, initial_length + this.context.size());
+            System.arraycopy(this.context.toString(), 0, params, initial_length, this.context.size());
+        }
+
+        //Try to always deal with the context
+//        (this.getServerVersion().getMajor() < 10)
+//                ? new Object[]{filter, offsetParam, limitParam, orderParam, false, count}
+//                : new Object[]{filter, offsetParam, limitParam, orderParam, count};
+//        this.getServerVersion()
+//        System.arraycopy(this.getContext(), 0, params, connectionParams.length, parameters.length);
         return objectClient.execute("execute", params);
     }
 
