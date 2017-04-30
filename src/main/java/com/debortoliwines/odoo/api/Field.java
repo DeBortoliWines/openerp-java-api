@@ -124,6 +124,8 @@ public class Field {
 			return FieldType.BOOLEAN;
 		else if (fieldType.equalsIgnoreCase("float"))
 			return FieldType.FLOAT;
+                else if (fieldType.equalsIgnoreCase("monetary"))
+			return FieldType.FLOAT;
 		else if (fieldType.equalsIgnoreCase("datetime"))
 			return FieldType.DATETIME;
 		else if (fieldType.equalsIgnoreCase("date"))
