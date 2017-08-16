@@ -17,7 +17,7 @@
  *
  */
 
-package com.debortoliwines.odoo.api.helpers;
+package com.odoojava.api.helpers;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,9 +27,9 @@ import java.util.stream.Collectors;
 
 import org.apache.xmlrpc.XmlRpcException;
 
-import com.debortoliwines.odoo.api.Field;
-import com.debortoliwines.odoo.api.FieldCollection;
-import com.debortoliwines.odoo.api.Row;
+import com.odoojava.api.Field;
+import com.odoojava.api.FieldCollection;
+import com.odoojava.api.Row;
 
 /**
  * Helper class to take a row object and flatten it out.

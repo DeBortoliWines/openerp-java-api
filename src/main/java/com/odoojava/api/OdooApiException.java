@@ -1,7 +1,7 @@
 /*
  *   Copyright 2011, 2014 De Bortoli Wines Pty Limited (Australia)
  *
- *   This file is part of OpenERPJavaAPI.
+ *   This file is part of OdooJavaAPI.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -17,35 +17,28 @@
  *
  */
 
-package com.debortoliwines.odoo.api;
+package com.odoojava.api;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-
-/***
- * Array of Field objects.
+/**
+ * Exception class for Odoo API errors
+ * 
  * @author Pieter van der Merwe
  *
  */
-public class FieldCollection extends ArrayList<Field> {
+public class OdooApiException extends Exception {
 
-	private static final long serialVersionUID = 470551054665276346L;
-	
-	/**
-	 * Sorts the field entries in this field collection by Name
-	 */
-	public void SortByName(){
-	  Collections.sort(this,new FieldByNameComparator());
-	}
-	
-	private class FieldByNameComparator implements Comparator<Field> { 
+	private static final long serialVersionUID = 3148147969903379455L;
 
-	  @Override
-	  public int compare(Field arg0, Field arg1) {
-	    return arg0.getName().compareTo(arg1.getName());
-	  }
-	  
+	public OdooApiException(String message) {
+		super(message);
 	}
-	
+
+	public OdooApiException(Throwable cause) {
+		super(cause);
+	}
+
+	public OdooApiException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
 }

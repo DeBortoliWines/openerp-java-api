@@ -1,5 +1,11 @@
-package com.debortoliwines.odoo.api;
+package com.odoojava.api;
 
+import com.odoojava.api.Response;
+import com.odoojava.api.OdooApiException;
+import com.odoojava.api.Row;
+import com.odoojava.api.OdooCommand;
+import com.odoojava.api.ObjectAdapter;
+import com.odoojava.api.FieldCollection;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 

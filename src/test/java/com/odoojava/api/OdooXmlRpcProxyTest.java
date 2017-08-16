@@ -1,5 +1,7 @@
-package com.debortoliwines.odoo.api;
+package com.odoojava.api;
 
+import com.odoojava.api.Version;
+import com.odoojava.api.OdooXmlRpcProxy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
@@ -21,8 +23,8 @@ import org.mockserver.model.StringBody;
 import org.mockserver.socket.PortFactory;
 import org.mockserver.socket.SSLFactory;
 
-import com.debortoliwines.odoo.api.OdooXmlRpcProxy.RPCProtocol;
-import com.debortoliwines.odoo.api.OdooXmlRpcProxy.RPCServices;
+import com.odoojava.api.OdooXmlRpcProxy.RPCProtocol;
+import com.odoojava.api.OdooXmlRpcProxy.RPCServices;
 
 public class OdooXmlRpcProxyTest {
 

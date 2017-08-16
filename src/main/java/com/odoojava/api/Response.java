@@ -1,4 +1,4 @@
-package com.debortoliwines.odoo.api;
+package com.odoojava.api;
 
 public class Response {
 

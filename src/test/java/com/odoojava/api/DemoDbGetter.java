@@ -1,4 +1,4 @@
-package com.debortoliwines.odoo.api;
+package com.odoojava.api;
 
 import java.io.BufferedWriter;
 import java.io.FileReader;
@@ -17,7 +17,7 @@ import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
 import org.junit.Ignore;
 
-import com.debortoliwines.odoo.api.OdooXmlRpcProxy.RPCProtocol;
+import com.odoojava.api.OdooXmlRpcProxy.RPCProtocol;
 
 @Ignore
 public class DemoDbGetter {

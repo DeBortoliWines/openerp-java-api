@@ -1,5 +1,8 @@
-package com.debortoliwines.odoo.api;
+package com.odoojava.api;
 
+import com.odoojava.api.Version;
+import com.odoojava.api.Session;
+import com.odoojava.api.Context;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.fail;
@@ -27,8 +30,8 @@ import org.mockserver.socket.PortFactory;
 import org.mockserver.socket.SSLFactory;
 import org.mockserver.verify.VerificationTimes;
 
-import com.debortoliwines.odoo.api.DemoDbGetter.DemoDbInfoRequester;
-import com.debortoliwines.odoo.api.OdooXmlRpcProxy.RPCProtocol;
+import com.odoojava.api.DemoDbGetter.DemoDbInfoRequester;
+import com.odoojava.api.OdooXmlRpcProxy.RPCProtocol;
 
 public class SessionTest {
 	private static final String MOCKSERVER_HOST = "localhost";
