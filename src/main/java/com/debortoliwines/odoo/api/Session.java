@@ -223,7 +223,10 @@ public class Session {
 
     /**
      * Executes any command on the server linked to the /xmlrpc/object service.
-     * All parameters are prepended by: "databaseName,userID,password"
+     * All parameters are prepended by: "databaseName,userID,password" This
+     * method execute the command without the context parameter Its purpose is
+     * to be used by Odoo version prior to v10 or for v10 methods that mustn't
+     * use the context
      *
      * @param objectName Object or model name to execute the command on
      * @param commandName Command name to execute
@@ -236,27 +239,38 @@ public class Session {
         Object[] connectionParams = new Object[]{databaseName, userID, password, objectName, commandName};
 
         // Combine the connection parameters and command parameters
-//        Object[] params;
-//        if ()
-        Object[] params = new Object[connectionParams.length + (parameters == null ? 0 : parameters.length)];
+        Object[] params = new Object[connectionParams.length
+                + (parameters == null ? 0 : parameters.length)];
         System.arraycopy(connectionParams, 0, params, 0, connectionParams.length);
 
         if (parameters != null && parameters.length > 0) {
             System.arraycopy(parameters, 0, params, connectionParams.length, parameters.length);
         }
-        if (this.getServerVersion().getMajor() == 9 && this.context.size() > 0) {
-            Integer initial_length = params.length;
-            params = Arrays.copyOf(params, initial_length + this.context.size());
-            System.arraycopy(this.context.toString(), 0, params, initial_length, this.context.size());
-        }
-
-        //Try to always deal with the context
-//        (this.getServerVersion().getMajor() < 10)
-//                ? new Object[]{filter, offsetParam, limitParam, orderParam, false, count}
-//                : new Object[]{filter, offsetParam, limitParam, orderParam, count};
-//        this.getServerVersion()
-//        System.arraycopy(this.getContext(), 0, params, connectionParams.length, parameters.length);
         return objectClient.execute("execute", params);
+    }
+
+    /**
+     * Executes any command on the server linked to the /xmlrpc/object service.
+     * parameters and Context are prepended .The context MUST NOT have been 
+     * already passed in the parameters.
+     *
+     * @param objectName Object or model name to execute the command on
+     * @param commandName Command name to execute
+     * @param parameters List of parameters for the command. For easy of use,
+     * consider the OdooCommand object or ObjectAdapter
+     * @return The result of the call
+     * @throws XmlRpcException
+     */
+    public Object executeCommandWithContext(final String objectName, final String commandName, final Object[] parameters) throws XmlRpcException {
+        Object[] connectionParams = new Object[]{databaseName, userID, password, objectName, commandName};
+
+        // Combine the parameters with the context
+        Object[] params = new Object[1 + (parameters == null ? 0 : parameters.length)];
+        if (parameters != null && parameters.length > 0) {
+            System.arraycopy(parameters, 0, params, 0, parameters.length);
+        }
+        System.arraycopy(new Object[]{getContext()}, 0, params, parameters.length, 1);
+        return executeCommand(objectName, commandName, params);
     }
 
     /**

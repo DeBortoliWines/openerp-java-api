@@ -82,7 +82,12 @@ public class OdooCommand {
                 : new Object[]{filter, offsetParam, limitParam, orderParam, count};
 
         try {
-            Response response = new Response(session.executeCommand(objectName, "search", params));
+            //TODO: test differents version with search on quantity on products
+            //with location_id in the context to check that it works or not
+            Response response = (this.session.getServerVersion().getMajor() < 10) 
+                    ? new Response(session.executeCommand(objectName, "search", params))
+                    : new Response(session.executeCommandWithContext(objectName, "search", params));
+           
             return response;
         } catch (XmlRpcException e) {
             return new Response(e);
@@ -100,7 +105,7 @@ public class OdooCommand {
     @SuppressWarnings("unchecked")
     public Map<String, Object> getFields(String objectName, String[] filterFields) throws XmlRpcException {
         Map<String, Object> fieldsArray;
-        if (this.session.getServerVersion().getMajor() >= 8 ) {
+        if (this.session.getServerVersion().getMajor() >= 8) {
             fieldsArray = (Map<String, Object>) session.executeCommand(objectName, "fields_get",
                     new Object[]{filterFields});
         } else {
@@ -122,13 +127,14 @@ public class OdooCommand {
      * @throws XmlRpcException
      */
     public Object[] readObject(String objectName, Object[] ids, String[] fields) throws XmlRpcException {
-        Object[] readResult ;
-        if (this.session.getServerVersion().getMajor() >= 8 ) {
-            readResult = (Object[]) session.executeCommand(objectName, "read", new Object[]{ids, fields});
+        Object[] readResult;
+        if (this.session.getServerVersion().getMajor() >= 8) {
+            readResult = (Object[]) session.executeCommandWithContext(objectName, "read", new Object[]{ids, fields});
         } else {
+            //TODO: Have to be rewritten/deleted considering the previous call
             readResult = (Object[]) session.executeCommand(objectName, "read", new Object[]{ids, fields, session.getContext()});
         }
-        
+
         return readResult;
     }
 
@@ -142,7 +148,15 @@ public class OdooCommand {
      * @throws XmlRpcException
      */
     public boolean writeObject(String objectName, int id, Map<String, Object> valueList) throws XmlRpcException {
-        return (Boolean) session.executeCommand(objectName, "write", new Object[]{id, valueList});
+        if (this.session.getServerVersion().getMajor() < 10) {
+            //Prior to the v10, each version have to be adapted if needed
+            //Some methods on certains class from v8 to v9 don't respect the syntax
+            return (Boolean) session.executeCommand(objectName, "write", new Object[]{id, valueList});
+        } else {
+            //Work perfectly for the v10, please keep this check
+            return (Boolean) session.executeCommandWithContext(objectName, "write", new Object[]{id, valueList});
+        }
+
     }
 
     /**
@@ -202,16 +216,15 @@ public class OdooCommand {
      * @throws XmlRpcException
      */
     public Object createObject(String objectName, Map<String, Object> values) throws XmlRpcException {
-        Object readResult ;
-        if (this.session.getServerVersion().getMajor() >= 8 ) {
-            readResult = (Object) session.executeCommand(objectName, "create", new Object[]{values, session.getContext()});
+        Object readResult;
+        if (this.session.getServerVersion().getMajor() < 10) {
+            readResult = (Object) session.executeCommand(objectName, "create", new Object[]{values});
         } else {
-            readResult = (Object) session.executeCommand(objectName, "create", new Object[]{values, session.getContext()});
+            readResult = (Object) session.executeCommandWithContext(objectName, "create", new Object[]{values});
         }
-        
+
         return readResult;
-        
-        
+
     }
 
     /**
