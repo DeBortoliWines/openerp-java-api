@@ -104,8 +104,10 @@ public class OdooXmlRpcProxy extends XmlRpcClient {
 
 		XmlRpcClientConfigImpl xmlrpcConfigLogin = new XmlRpcClientConfigImpl();
 		
-		// Odoo does not support extensions
-		xmlrpcConfigLogin.setEnabledForExtensions(false);
+		// Odoo seems to be documented for supporting extensions
+                //https://doc.odoo.com/v6.0/developer/6_22_XML-RPC_web_services/index.html/
+                //https://www.odoo.com/fr_FR/forum/aide-1/question/using-openerp-xml-rpc-api-with-java-2872
+		xmlrpcConfigLogin.setEnabledForExtensions(true);
 		
 		// The URL is hardcoded and can not be malformed
 		try {
