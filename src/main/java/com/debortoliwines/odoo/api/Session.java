@@ -275,6 +275,14 @@ public class Session {
     }
 
     /**
+     * Returns the current logged in User's UserID
+     * @return
+     */
+    public int getUserID() {
+        return userID;
+    }
+
+    /**
      * Retrieves the context object for the session to set properties on
      *
      * @return
