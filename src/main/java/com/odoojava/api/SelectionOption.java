@@ -17,7 +17,7 @@
  *
  */
 
-package com.debortoliwines.odoo.api;
+package com.odoojava.api;
 
 /**
  * Holds selection options for Field(s) in a FieldCollection if the field is a selection field.

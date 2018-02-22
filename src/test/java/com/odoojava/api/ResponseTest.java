@@ -1,5 +1,6 @@
-package com.debortoliwines.odoo.api;
+package com.odoojava.api;
 
+import com.odoojava.api.Response;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.assertj.core.api.SoftAssertions;

@@ -1,5 +1,8 @@
-package com.debortoliwines.odoo.api;
+package com.odoojava.api;
 
+import com.odoojava.api.Response;
+import com.odoojava.api.Session;
+import com.odoojava.api.OdooCommand;
 import java.util.Map;
 import org.apache.xmlrpc.XmlRpcException;
 import static org.assertj.core.api.Assertions.fail;

@@ -17,7 +17,7 @@
  *
  */
 
-package com.debortoliwines.odoo.api.helpers;
+package com.odoojava.api.helpers;
 
 /**
  * Filter helper to assist is common tasks and store some hardcoded values

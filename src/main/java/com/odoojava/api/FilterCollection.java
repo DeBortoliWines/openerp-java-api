@@ -17,7 +17,7 @@
  *
  */
 
-package com.debortoliwines.odoo.api;
+package com.odoojava.api;
 
 import java.util.ArrayList;
 

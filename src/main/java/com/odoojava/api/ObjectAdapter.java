@@ -16,7 +16,7 @@
  *   limitations under the License. 
  *
  */
-package com.debortoliwines.odoo.api;
+package com.odoojava.api;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -33,8 +33,8 @@ import java.util.stream.Stream;
 
 import org.apache.xmlrpc.XmlRpcException;
 
-import com.debortoliwines.odoo.api.Field.FieldType;
-import com.debortoliwines.odoo.api.helpers.FilterHelper;
+import com.odoojava.api.Field.FieldType;
+import com.odoojava.api.helpers.FilterHelper;
 
 /**
  * Main class for communicating with the server. It provides extra validation
