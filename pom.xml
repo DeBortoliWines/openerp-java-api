@@ -41,4 +41,14 @@
     	<scope>test</scope>
     </dependency>
   </dependencies>
+  <organization>
+  	<name>odoo-java</name>
+  	<url>http://odoo-java.com</url>
+  </organization>
+  <scm>
+  	<url>https://github.com/DeBortoliWines/openerp-java-api</url>
+  </scm>
+  <issueManagement>
+  	<url>https://github.com/DeBortoliWines/openerp-java-api/issues</url>
+  </issueManagement>
 </project>

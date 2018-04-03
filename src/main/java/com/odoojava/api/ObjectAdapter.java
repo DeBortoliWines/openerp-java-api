@@ -164,6 +164,7 @@ public class ObjectAdapter {
                     /*
 				 * Get the parent workflow to work out get the object name
                      */
+                	//TODO: Check the latest syntax or workflow
                     int wkfId = Integer.parseInt(((Object[]) ((HashMap<String, Object>) row).get("wkf_id"))[0].toString());
                     Object[] workflow = command.readObject("workflow", new Object[]{wkfId}, new String[]{"osv"});
 

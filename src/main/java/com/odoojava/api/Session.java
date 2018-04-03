@@ -19,7 +19,9 @@
 package com.odoojava.api;
 
 import java.util.ArrayList;
+import javax.xml.bind.DatatypeConverter;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.xmlrpc.XmlRpcException;
 
@@ -35,289 +37,370 @@ import java.util.Arrays;
  * @author Pieter van der Merwe
  *
  */
+/**
+ * @author florent
+ *
+ */
+/**
+ * @author florent
+ *
+ */
+/**
+ * @author florent
+ *
+ */
 public class Session {
 
-    private static final String LINE_SEPARATOR_SYSTEM_PROPERTY = "line.separator";
-    private static final String LINE_SEPARATOR = System.getProperty(LINE_SEPARATOR_SYSTEM_PROPERTY);
-    private String host;
-    private int port;
-    private String databaseName;
-    private String userName;
-    private String password;
-    private int userID;
-    private Context context = new Context();
-    private static boolean connecting = false;
-    private RPCProtocol protocol;
+	private static final String LINE_SEPARATOR_SYSTEM_PROPERTY = "line.separator";
+	private static final String LINE_SEPARATOR = System.getProperty(LINE_SEPARATOR_SYSTEM_PROPERTY);
+	private String host;
+	private int port;
+	private String databaseName;
+	private String userName;
+	private String password;
+	private int userID;
+	private Context context = new Context();
+	private static boolean connecting = false;
+	private RPCProtocol protocol;
 
-    private OdooXmlRpcProxy objectClient;
-    private Version serverVersion;
+	private OdooXmlRpcProxy objectClient;
+	private Version serverVersion;
 
-    /**
-     * *
-     * Session constructor
-     *
-     * @param protocol XML-RPC protocol to use. ex http/https.
-     * @param host Host name or IP address where the Odoo server is hosted
-     * @param port XML-RPC port number to connect to. Typically 8069.
-     * @param databaseName Database name to connect to
-     * @param userName Username to log into the Odoo server
-     * @param password Password to log into the Odoo server
-     */
-    public Session(RPCProtocol protocol, String host, int port, String databaseName, String userName, String password) {
-        this.protocol = protocol;
-        this.host = host;
-        this.port = port;
-        this.databaseName = databaseName;
-        this.userName = userName;
-        this.password = password;
-        this.objectClient = new OdooXmlRpcProxy(protocol, host, port, RPCServices.RPC_OBJECT);
-    }
+	/**
+	 * * Session constructor
+	 *
+	 * @param protocol
+	 *            XML-RPC protocol to use. ex http/https.
+	 * @param host
+	 *            Host name or IP address where the Odoo server is hosted
+	 * @param port
+	 *            XML-RPC port number to connect to. Typically 8069.
+	 * @param databaseName
+	 *            Database name to connect to
+	 * @param userName
+	 *            Username to log into the Odoo server
+	 * @param password
+	 *            Password to log into the Odoo server
+	 */
+	public Session(RPCProtocol protocol, String host, int port, String databaseName, String userName, String password) {
+		this.protocol = protocol;
+		this.host = host;
+		this.port = port;
+		this.databaseName = databaseName;
+		this.userName = userName;
+		this.password = password;
+		this.objectClient = new OdooXmlRpcProxy(protocol, host, port, RPCServices.RPC_OBJECT);
+	}
 
-    /**
-     * *
-     * Session constructor. Uses default http protocol to connect.
-     *
-     * @param host Host name or IP address where the Odoo server is hosted
-     * @param port XML-RPC port number to connect to. Typically 8069.
-     * @param databaseName Database name to connect to
-     * @param userName Username to log into the Odoo server
-     * @param password Password to log into the Odoo server
-     */
-    public Session(String host, int port, String databaseName, String userName, String password) {
-        this(RPCProtocol.RPC_HTTP, host, port, databaseName, userName, password);
-    }
+	/**
+	 * * Session constructor. Uses default http protocol to connect.
+	 *
+	 * @param host
+	 *            Host name or IP address where the Odoo server is hosted
+	 * @param port
+	 *            XML-RPC port number to connect to. Typically 8069.
+	 * @param databaseName
+	 *            Database name to connect to
+	 * @param userName
+	 *            Username to log into the Odoo server
+	 * @param password
+	 *            Password to log into the Odoo server
+	 */
+	public Session(String host, int port, String databaseName, String userName, String password) {
+		this(RPCProtocol.RPC_HTTP, host, port, databaseName, userName, password);
+	}
 
-    /**
-     * Returns an initialized ObjectAdapter object for ease of reference. A
-     * ObjectAdapter object does type conversions and error checking before
-     * making a call to the server
-     *
-     * @return
-     */
-    public ObjectAdapter getObjectAdapter(String objectName) throws XmlRpcException, OdooApiException {
-        return new ObjectAdapter(this, objectName);
-    }
+	/**
+	 * Returns an initialized ObjectAdapter object for ease of reference. A
+	 * ObjectAdapter object does type conversions and error checking before
+	 * making a call to the server
+	 *
+	 * @return
+	 */
+	public ObjectAdapter getObjectAdapter(String objectName) throws XmlRpcException, OdooApiException {
+		return new ObjectAdapter(this, objectName);
+	}
 
-    /**
-     * *
-     * Starts a session on the Odoo server and saves the UserID for use in later
-     * calls
-     *
-     * @throws Exception upon failure to connect
-     */
-    public void startSession() throws Exception {
+	/**
+	 * * Starts a session on the Odoo server and saves the UserID for use in
+	 * later calls
+	 *
+	 * @throws Exception
+	 *             upon failure to connect
+	 */
+	public void startSession() throws Exception {
 
-        checkDatabasePresenceSafe();
+		checkDatabasePresenceSafe();
 
-        // Synchronize all threads to login.  If you login with the same user at the same time you get concurrency
-        // errors in the Odoo server (for example by running a multi threaded
-        // ETL process like Kettle).
-        Session.startConnecting();
-        try {
-            authenticate();
-        } finally {
-            Session.connecting = false;
-        }
-        getRemoteContext();
+		// Synchronize all threads to login. If you login with the same user at
+		// the same time you get concurrency
+		// errors in the Odoo server (for example by running a multi threaded
+		// ETL process like Kettle).
+		Session.startConnecting();
+		try {
+			authenticate();
+			checkVersionCompatibility();
+		} finally {
+			Session.connecting = false;
+		}
+		getRemoteContext();
+	}
 
-    }
+	private void checkVersionCompatibility() throws XmlRpcException, OdooApiException {
 
-    void getRemoteContext() throws XmlRpcException {
-        this.context.clear();
-        @SuppressWarnings("unchecked")
-        HashMap<String, Object> odooContext = (HashMap<String, Object>) this.executeCommand("res.users",
-                "context_get", new Object[]{});
-        this.context.putAll(odooContext);
+		if (this.getServerVersion().getMajor() < 8) {
+			throw new OdooApiException(
+					"Only Odoo Version 8.x and Up are maintained. " + "Please choose another version of the library");
+		}else if (this.getServerVersion().getMajor() < 10) {
+			throw new OdooApiException(
+					"Only Odoo Version 10.x and Up are maintained. " + "Please choose another version of the library");
+		}
 
-        // Standard behavior is web/gui clients.
-        this.context.setActiveTest(true);
-    }
+	}
 
-    int authenticate() throws XmlRpcException, Exception {
-        OdooXmlRpcProxy commonClient = new OdooXmlRpcProxy(protocol, host, port, RPCServices.RPC_COMMON);
+	/**
+	 * 
+	 * @param reportName
+	 * @return reportAdapter initialized with 
+	 * @throws OdooApiException
+	 * @throws XmlRpcException
+	 */
+	public ReportAdapter getReportAdapter(String reportName) throws OdooApiException, XmlRpcException {
+		ReportAdapter reportAdapter = new ReportAdapter(this);
+		reportAdapter.setReport(reportName);
+		return reportAdapter;
+	}
 
-        Object id = commonClient.execute("login", new Object[]{databaseName, userName, password});
+	void getRemoteContext() throws XmlRpcException {
+		this.context.clear();
+		@SuppressWarnings("unchecked")
+		HashMap<String, Object> odooContext = (HashMap<String, Object>) this.executeCommand("res.users", "context_get",
+				new Object[] {});
+		this.context.putAll(odooContext);
 
-        if (id instanceof Integer) {
-            userID = (Integer) id;
-        } else {
-            throw new Exception("Incorrect username and/or password.  Login Failed.");
-        }
+		// Standard behavior is web/gui clients.
+		this.context.setActiveTest(true);
+	}
 
-        return userID;
-    }
+	int authenticate() throws XmlRpcException, Exception {
+		OdooXmlRpcProxy commonClient = new OdooXmlRpcProxy(protocol, host, port, RPCServices.RPC_COMMON);
 
-    void checkDatabasePresenceSafe() {
-        // 21/07/2012 - Database listing may not be enabled (--no-database-list
-        // or list_db=false).
-        // Only provides additional information in any case.
-        try {
+		Object id = commonClient.execute("login", new Object[] { databaseName, userName, password });
 
-            checkDatabasePresence();
-        } catch (Exception e) {
-            // e.printStackTrace();
-        }
-    }
+		if (id instanceof Integer) {
+			userID = (Integer) id;
+		} else {
+			throw new Exception("Incorrect username and/or password.  Login Failed.");
+		}
 
-    void checkDatabasePresence() throws XmlRpcException {
-        ArrayList<String> dbList = getDatabaseList(protocol, host, port);
-        if (!dbList.contains(databaseName)) {
-            StringBuilder messageBuilder = new StringBuilder("Error while connecting to Odoo.  Database [")
-                    .append(databaseName).append("]  was not found in the following list: ").append(LINE_SEPARATOR)
-                    .append(LINE_SEPARATOR).append(String.join(LINE_SEPARATOR, dbList)).append(LINE_SEPARATOR);
+		return userID;
+	}
 
-            throw new IllegalStateException(messageBuilder.toString());
-        }
-    }
+	void checkDatabasePresenceSafe() {
+		// 21/07/2012 - Database listing may not be enabled (--no-database-list
+		// or list_db=false).
+		// Only provides additional information in any case.
+		try {
 
-    private synchronized static void startConnecting() {
-        while (Session.connecting) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        Session.connecting = true;
-    }
+			checkDatabasePresence();
+		} catch (Exception e) {
+			// e.printStackTrace();
+		}
+	}
 
-    /**
-     * *
-     * Get a list of databases available on a specific host and port with the
-     * http protocol.
-     *
-     * @param host Host name or IP address where the Odoo server is hosted
-     * @param port XML-RPC port number to connect to
-     * @return A list of databases available for the Odoo instance
-     * @throws XmlRpcException
-     */
-    public static ArrayList<String> getDatabaseList(String host, int port) throws XmlRpcException {
-        return getDatabaseList(RPCProtocol.RPC_HTTP, host, port);
-    }
+	void checkDatabasePresence() throws XmlRpcException {
+		ArrayList<String> dbList = getDatabaseList(protocol, host, port);
+		if (!dbList.contains(databaseName)) {
+			StringBuilder messageBuilder = new StringBuilder("Error while connecting to Odoo.  Database [")
+					.append(databaseName).append("]  was not found in the following list: ").append(LINE_SEPARATOR)
+					.append(LINE_SEPARATOR).append(String.join(LINE_SEPARATOR, dbList)).append(LINE_SEPARATOR);
 
-    /**
-     * *
-     * Get a list of databases available on a specific host and port
-     *
-     * @param protocol Protocol to use when connecting to the RPC service ex.
-     * http/https
-     * @param host Host name or IP address where the Odoo server is hosted
-     * @param port XML-RPC port number to connect to
-     * @return A list of databases available for the Odoo instance
-     * @throws XmlRpcException
-     */
-    public static ArrayList<String> getDatabaseList(RPCProtocol protocol, String host, int port)
-            throws XmlRpcException {
-        OdooXmlRpcProxy client = new OdooXmlRpcProxy(protocol, host, port, RPCServices.RPC_DATABASE);
+			throw new IllegalStateException(messageBuilder.toString());
+		}
+	}
 
-        // Retrieve databases
-        Object[] result = (Object[]) client.execute("list", new Object[]{});
+	private synchronized static void startConnecting() {
+		while (Session.connecting) {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		Session.connecting = true;
+	}
 
-        ArrayList<String> finalResults = new ArrayList<String>();
-        for (Object res : result) {
-            finalResults.add((String) res);
-        }
+	/**
+	 * * Get a list of databases available on a specific host and port with the
+	 * http protocol.
+	 *
+	 * @param host
+	 *            Host name or IP address where the Odoo server is hosted
+	 * @param port
+	 *            XML-RPC port number to connect to
+	 * @return A list of databases available for the Odoo instance
+	 * @throws XmlRpcException
+	 */
+	public static ArrayList<String> getDatabaseList(String host, int port) throws XmlRpcException {
+		return getDatabaseList(RPCProtocol.RPC_HTTP, host, port);
+	}
 
-        return finalResults;
-    }
+	/**
+	 * * Get a list of databases available on a specific host and port
+	 *
+	 * @param protocol
+	 *            Protocol to use when connecting to the RPC service ex.
+	 *            http/https
+	 * @param host
+	 *            Host name or IP address where the Odoo server is hosted
+	 * @param port
+	 *            XML-RPC port number to connect to
+	 * @return A list of databases available for the Odoo instance
+	 * @throws XmlRpcException
+	 */
+	public static ArrayList<String> getDatabaseList(RPCProtocol protocol, String host, int port)
+			throws XmlRpcException {
+		OdooXmlRpcProxy client = new OdooXmlRpcProxy(protocol, host, port, RPCServices.RPC_DATABASE);
 
-    /**
-     * Executes any command on the server linked to the /xmlrpc/object service.
-     * All parameters are prepended by: "databaseName,userID,password" This
-     * method execute the command without the context parameter Its purpose is
-     * to be used by Odoo version prior to v10 or for v10 methods that mustn't
-     * use the context
-     *
-     * @param objectName Object or model name to execute the command on
-     * @param commandName Command name to execute
-     * @param parameters List of parameters for the command. For easy of use,
-     * consider the OdooCommand object or ObjectAdapter
-     * @return The result of the call
-     * @throws XmlRpcException
-     */
-    public Object executeCommand(final String objectName, final String commandName, final Object[] parameters) throws XmlRpcException {
-        Object[] connectionParams = new Object[]{databaseName, userID, password, objectName, commandName};
+		// Retrieve databases
+		Object[] result = (Object[]) client.execute("list", new Object[] {});
 
-        // Combine the connection parameters and command parameters
-        Object[] params = new Object[connectionParams.length
-                + (parameters == null ? 0 : parameters.length)];
-        System.arraycopy(connectionParams, 0, params, 0, connectionParams.length);
+		ArrayList<String> finalResults = new ArrayList<String>();
+		for (Object res : result) {
+			finalResults.add((String) res);
+		}
 
-        if (parameters != null && parameters.length > 0) {
-            System.arraycopy(parameters, 0, params, connectionParams.length, parameters.length);
-        }
-        return objectClient.execute("execute", params);
-    }
+		return finalResults;
+	}
 
-    /**
-     * Executes any command on the server linked to the /xmlrpc/object service.
-     * parameters and Context are prepended .The context MUST NOT have been 
-     * already passed in the parameters.
-     *
-     * @param objectName Object or model name to execute the command on
-     * @param commandName Command name to execute
-     * @param parameters List of parameters for the command. For easy of use,
-     * consider the OdooCommand object or ObjectAdapter
-     * @return The result of the call
-     * @throws XmlRpcException
-     */
-    public Object executeCommandWithContext(final String objectName, final String commandName, final Object[] parameters) throws XmlRpcException {
-        Object[] connectionParams = new Object[]{databaseName, userID, password, objectName, commandName};
+	/**
+	 * Executes any command on the server linked to the /xmlrpc/object service.
+	 * All parameters are prepended by: "databaseName,userID,password" This
+	 * method execute the command without the context parameter Its purpose is
+	 * to be used by Odoo version prior to v10 or for v10 methods that mustn't
+	 * use the context
+	 *
+	 * @param objectName
+	 *            Object or model name to execute the command on
+	 * @param commandName
+	 *            Command name to execute
+	 * @param parameters
+	 *            List of parameters for the command. For easy of use, consider
+	 *            the OdooCommand object or ObjectAdapter
+	 * @return The result of the call
+	 * @throws XmlRpcException
+	 */
+	public Object executeCommand(final String objectName, final String commandName, final Object[] parameters)
+			throws XmlRpcException {
+		Object[] connectionParams = new Object[] { databaseName, userID, password, objectName, commandName };
 
-        // Combine the parameters with the context
-        Object[] params = new Object[1 + (parameters == null ? 0 : parameters.length)];
-        if (parameters != null && parameters.length > 0) {
-            System.arraycopy(parameters, 0, params, 0, parameters.length);
-        }
-        System.arraycopy(new Object[]{getContext()}, 0, params, parameters.length, 1);
-        return executeCommand(objectName, commandName, params);
-    }
+		// Combine the connection parameters and command parameters
+		Object[] params = new Object[connectionParams.length + (parameters == null ? 0 : parameters.length)];
+		System.arraycopy(connectionParams, 0, params, 0, connectionParams.length);
 
-    /**
-     * Executes a workflow by sending a signal to the workflow engine for a
-     * specific object. This functions calls the 'exec_workflow' method on the
-     * object All parameters are prepended by: "databaseName,userID,password"
-     *
-     * @param objectName Object or model name to send the signal for
-     * @param signal Signal name to send, for example order_confirm
-     * @param objectID Specific object ID to send the signal for
-     * @throws XmlRpcException
-     */
-    public void executeWorkflow(final String objectName, final String signal, final int objectID) throws XmlRpcException {
-        Object[] params = new Object[]{databaseName, userID, password, objectName, signal, objectID};
+		if (parameters != null && parameters.length > 0) {
+			System.arraycopy(parameters, 0, params, connectionParams.length, parameters.length);
+		}
+		return objectClient.execute("execute", params);
+	}
 
-        objectClient.execute("exec_workflow", params);
-    }
+	/**
+	 * Executes any command on the server linked to the /xmlrpc/object service.
+	 * parameters and Context are prepended .The context MUST NOT have been
+	 * already passed in the parameters.
+	 *
+	 * @param objectName
+	 *            Object or model name to execute the command on
+	 * @param commandName
+	 *            Command name to execute
+	 * @param parameters
+	 *            List of parameters for the command. For easy of use, consider
+	 *            the OdooCommand object or ObjectAdapter
+	 * @return The result of the call
+	 * @throws XmlRpcException
+	 */
+	public Object executeCommandWithContext(final String objectName, final String commandName,
+			final Object[] parameters) throws XmlRpcException {
+		Object[] connectionParams = new Object[] { databaseName, userID, password, objectName, commandName };
 
-    /**
-     * Returns the Odoo server version for this session
-     *
-     * @return
-     * @throws XmlRpcException
-     */
-    public Version getServerVersion() throws XmlRpcException {
-        if (serverVersion == null) {
-            // Cache server version
-            serverVersion = OdooXmlRpcProxy.getServerVersion(protocol, host, port);
-        }
-        return serverVersion;
-    }
+		// Combine the parameters with the context
+		Object[] params = new Object[1 + (parameters == null ? 0 : parameters.length)];
+		if (parameters != null && parameters.length > 0) {
+			System.arraycopy(parameters, 0, params, 0, parameters.length);
+		}
+		System.arraycopy(new Object[] { getContext() }, 0, params, parameters.length, 1);
+		return executeCommand(objectName, commandName, params);
+	}
 
-    /**
-     * Returns the current logged in User's UserID
-     * @return
-     */
-    public int getUserID() {
-        return userID;
-    }
+	/**
+	 * Executes a workflow by sending a signal to the workflow engine for a
+	 * specific object. This functions calls the 'exec_workflow' method on the
+	 * object All parameters are prepended by: "databaseName,userID,password"
+	 *
+	 * @param objectName
+	 *            Object or model name to send the signal for
+	 * @param signal
+	 *            Signal name to send, for example order_confirm
+	 * @param objectID
+	 *            Specific object ID to send the signal for
+	 * @throws XmlRpcException
+	 */
+	public void executeWorkflow(final String objectName, final String signal, final int objectID)
+			throws XmlRpcException {
+		Object[] params = new Object[] { databaseName, userID, password, objectName, signal, objectID };
 
-    
-    /**
-     * Retrieves the context object for the session to set properties on
-     *
-     * @return
-     */
-    public Context getContext() {
-        return context;
-    }
+		objectClient.execute("exec_workflow", params);
+	}
+
+	/**
+	 * Returns the Odoo server version for this session
+	 *
+	 * @return
+	 * @throws XmlRpcException
+	 */
+	public Version getServerVersion() throws XmlRpcException {
+		if (serverVersion == null) {
+			// Cache server version
+			serverVersion = OdooXmlRpcProxy.getServerVersion(protocol, host, port);
+		}
+		return serverVersion;
+	}
+
+	public byte[] executeReportService(String reportName, Object[] ids) throws XmlRpcException {
+		byte[] finalResults;
+		Object[] reportParams = new Object[] { databaseName, userID, password, reportName, ids };
+		
+		if (getServerVersion().getMajor() < 11) {
+			OdooXmlRpcProxy client = new OdooXmlRpcProxy(protocol, host, port, RPCServices.RPC_REPORT);
+ 
+			Map<String, Object> result = (Map<String, Object>)client.execute("render_report", reportParams);
+				finalResults = DatatypeConverter.parseBase64Binary(
+				    (String)result.get("result"));
+			
+		} else {
+			// Implement changes thanks to
+			// https://github.com/OCA/odoorpc/issues/20
+			finalResults = null;
+		}
+		return finalResults;
+
+	}
+
+	/**
+	 * Returns the current logged in User's UserID
+	 * 
+	 * @return
+	 */
+	public int getUserID() {
+		return userID;
+	}
+
+	/**
+	 * Retrieves the context object for the session to set properties on
+	 *
+	 * @return
+	 */
+	public Context getContext() {
+		return context;
+	}
 }

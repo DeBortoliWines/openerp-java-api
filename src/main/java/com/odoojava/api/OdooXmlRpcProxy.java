@@ -37,28 +37,26 @@ import org.apache.xmlrpc.client.XmlRpcTransportFactory;
  * @author fpoyer
  */
 public class OdooXmlRpcProxy extends XmlRpcClient {
-	
+
 	/**
 	 * Enum for the main RPC services that Odoo expose
 	 */
 	public enum RPCServices {
-		RPC_COMMON,
-		RPC_OBJECT,
-		RPC_DATABASE
+		RPC_COMMON, RPC_OBJECT, RPC_DATABASE, RPC_REPORT
 	}
-	
+
 	/**
 	 * Enum for the RPC protocol used to connect to Odoo
 	 */
-  public enum RPCProtocol {
-    RPC_HTTP,
-    RPC_HTTPS
-  }
-	
+	public enum RPCProtocol {
+		RPC_HTTP, RPC_HTTPS
+	}
+
 	private final String RPC_COMMON_URL = "/xmlrpc/2/common";
 	private final String RPC_OBJECT_URL = "/xmlrpc/2/object";
+	private final String RPC_REPORT_URL = "/xmlrpc/2/report";
 	private final String RPC_DATABASE_URL = "/xmlrpc/2/db";
-	
+
 	/**
 	 * Proxy object to handle calls to and from the Odoo server
 	 * 
@@ -74,9 +72,9 @@ public class OdooXmlRpcProxy extends XmlRpcClient {
 	 */
 	public OdooXmlRpcProxy(RPCProtocol protocol, String host, int port, RPCServices service) {
 		super();
-		
+
 		String URL = "";
-		
+
 		switch (service) {
 		case RPC_COMMON:
 			URL = this.RPC_COMMON_URL;
@@ -84,11 +82,14 @@ public class OdooXmlRpcProxy extends XmlRpcClient {
 		case RPC_OBJECT:
 			URL = this.RPC_OBJECT_URL;
 			break;
+		case RPC_REPORT:
+			URL = this.RPC_REPORT_URL;
+			break;
 		case RPC_DATABASE:
 			URL = this.RPC_DATABASE_URL;
 			break;
 		}
-		
+
 		String protocol_str = "";
 		switch (protocol) {
 		case RPC_HTTP:
@@ -103,18 +104,18 @@ public class OdooXmlRpcProxy extends XmlRpcClient {
 		useProxyIfAvailable(protocol);
 
 		XmlRpcClientConfigImpl xmlrpcConfigLogin = new XmlRpcClientConfigImpl();
-		
+
 		// Odoo seems to be documented for supporting extensions
-                //https://doc.odoo.com/v6.0/developer/6_22_XML-RPC_web_services/index.html/
-                //https://www.odoo.com/fr_FR/forum/aide-1/question/using-openerp-xml-rpc-api-with-java-2872
+		// https://doc.odoo.com/v6.0/developer/6_22_XML-RPC_web_services/index.html/
+		// https://www.odoo.com/fr_FR/forum/aide-1/question/using-openerp-xml-rpc-api-with-java-2872
 		xmlrpcConfigLogin.setEnabledForExtensions(true);
-		
+
 		// The URL is hardcoded and can not be malformed
 		try {
 			xmlrpcConfigLogin.setServerURL(new URL(protocol_str, host, port, URL));
 		} catch (MalformedURLException e) {
 		}
-	
+
 		this.setConfig(xmlrpcConfigLogin);
 	}
 
@@ -164,8 +165,8 @@ public class OdooXmlRpcProxy extends XmlRpcClient {
 			System.err.println("No transport factory or not compatible with Proxy support!");
 		}
 	}
-	
-  	/***
+
+	/***
 	 * Returns the Odoo server version. For example 7.0-20130216-002451 or 6.1-1
 	 * 
 	 * @param protocol
@@ -178,10 +179,9 @@ public class OdooXmlRpcProxy extends XmlRpcClient {
 	 * @return The version number as a String
 	 * @throws XmlRpcException
 	 */
-	public static Version getServerVersion(RPCProtocol protocol, String host, int port) throws XmlRpcException
-  {
-    OdooXmlRpcProxy client = new OdooXmlRpcProxy(protocol, host, port, RPCServices.RPC_DATABASE);
-    
-    return new Version(client.execute("server_version", new Object[] {}).toString());
-  }
+	public static Version getServerVersion(RPCProtocol protocol, String host, int port) throws XmlRpcException {
+		OdooXmlRpcProxy client = new OdooXmlRpcProxy(protocol, host, port, RPCServices.RPC_DATABASE);
+
+		return new Version(client.execute("server_version", new Object[] {}).toString());
+	}
 }
