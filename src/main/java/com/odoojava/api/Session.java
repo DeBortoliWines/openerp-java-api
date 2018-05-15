@@ -27,6 +27,7 @@ import org.apache.xmlrpc.XmlRpcException;
 
 import com.odoojava.api.OdooXmlRpcProxy.RPCProtocol;
 import com.odoojava.api.OdooXmlRpcProxy.RPCServices;
+import com.odoojava.api.OdooApiException;
 import java.util.Arrays;
 
 /**
@@ -148,12 +149,9 @@ public class Session {
 
 	private void checkVersionCompatibility() throws XmlRpcException, OdooApiException {
 
-		if (this.getServerVersion().getMajor() < 8) {
+		if (this.getServerVersion().getMajor() < 8 || this.getServerVersion().getMajor() > 10 ) {
 			throw new OdooApiException(
-					"Only Odoo Version 8.x and Up are maintained. " + "Please choose another version of the library");
-		}else if (this.getServerVersion().getMajor() < 10) {
-			throw new OdooApiException(
-					"Only Odoo Version 10.x and Up are maintained. " + "Please choose another version of the library");
+					"Only Odoo Version from v8.x to 10.x are maintained. " + "Please choose another version of the library");
 		}
 
 	}
