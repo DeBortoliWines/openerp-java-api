@@ -522,7 +522,7 @@ public class ObjectAdapter {
                     String newValue = "";
                     // Comma separated list of IDs
                     if (value instanceof String) {
-                        for (String singleID : value.toString().split(",")) {
+                        for (String singleID : value.toString().split("\s*,[,\s]*")) {
                             if (idToName.containsKey(singleID)) {
                                 newValue = newValue + "," + idToName.get(singleID);
                             } else {
