@@ -495,56 +495,18 @@ public class ObjectAdapter {
                     }
                     break;
                 case MANY2MANY:
-                    /*
-				 * The import function uses the Names of the objects for the
-				 * import. Replace the ID list passed in with a Name list for
-				 * the import_data function that we are about to call
-                     */
-                    Map<String, String> idToName;
-                    if (!modelNameCache.containsKey(fld.getRelation())) {
-                        idToName = new HashMap<>();
-                        Object[] ids = new Object[]{};
-                        Response response = command.searchObject(fld.getRelation(), new Object[]{});
-                        if (response.isSuccessful()) {
-                            ids = response.getResponseObjectAsArray();
-                            Object[] names = command.nameGet(fld.getRelation(), ids);
-                            for (int j = 0; j < ids.length; j++) {
-                                Object[] nameValue = (Object[]) names[j];
-                                idToName.put(nameValue[0].toString(), nameValue[1].toString());
-                            }
-                        }
-
-                        modelNameCache.put(fld.getRelation(), idToName);
-                    } else {
-                        idToName = modelNameCache.get(fld.getRelation());
-                    }
-
-                    String newValue = "";
                     // Comma separated list of IDs
                     if (value instanceof String) {
-                        for (String singleID : value.toString().split(",")) {
-                            if (idToName.containsKey(singleID)) {
-                                newValue = newValue + "," + idToName.get(singleID);
-                            } else {
-                                throw new OdooApiException(
-                                        "Could not find " + fld.getRelation() + " with ID " + singleID);
-                            }
-                        }
+                        outputRow[columnIndex] = value.toString();
                     } else {
                         // Object[] of values -- default
+                        String newValue = "";
                         for (Object singleID : (Object[]) value) {
-                            if (idToName.containsKey(singleID.toString())) {
-                                newValue = newValue + "," + idToName.get(singleID.toString());
-                            } else {
-                                throw new OdooApiException(
-                                        "Could not find " + fld.getRelation() + " with ID " + singleID.toString());
-                            }
+                            newValue = newValue + "," + singleID.toString();
                         }
+                        outputRow[columnIndex] = newValue.substring(1);
                     }
-                    outputRow[columnIndex] = newValue.substring(1);
-
                     break;
-
                 // The import procedure expects most types to be strings
                 default:
                     outputRow[columnIndex] = value.toString();
@@ -565,8 +527,8 @@ public class ObjectAdapter {
 
     private static String getFieldNameForImport(Field field) {
         // Return field name, adding ".id" if type is MANY2ONE
-        return field.getType() == FieldType.MANY2ONE ? field.getName() + ".id"
-                : field.getName();
+        return  field.getType() == FieldType.MANY2MANY || field.getType() == FieldType.MANY2ONE
+                ? field.getName() + ".id" : field.getName();
     }
 
     /**
