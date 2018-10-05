@@ -130,6 +130,7 @@ public class Row {
 		
 		if (value instanceof String && fieldType == Field.FieldType.DATE){
 			DateFormat dfm = new SimpleDateFormat("yyyy-MM-dd");
+			dfm.setTimeZone(TimeZone.getTimeZone("UTC"));
 			try{
 				return dfm.parse(value.toString());
 			}
@@ -140,6 +141,7 @@ public class Row {
 		
 		if (value instanceof String && fieldType == Field.FieldType.DATETIME){
 			DateFormat dfm = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			dfm.setTimeZone(TimeZone.getTimeZone("UTC"));
 			try{
 				return dfm.parse(value.toString());
 			}
