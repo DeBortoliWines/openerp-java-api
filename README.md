@@ -1,6 +1,9 @@
 Odoo Java Api
 ================
 
+This reppo is no more maintained for new odoo versions. The new one https://github.com/odoo-java/odoo-java-api is the appropriate for improvements.
+Current issues and PR will be proposed on the new repo
+
 A Java API to connect to Odoo and manage data using the XMLRPC interface.
 
 The API reduces the amount of boiler plate code needed to communicate with Odoo 
