@@ -1,6 +1,9 @@
 Odoo Java Api
 ================
 
+This repo has been forked because of the project https://github.com/DeBortoliWines/openerp-java-api/issues/31 
+
+
 A Java API to connect to Odoo and manage data using the XMLRPC interface.
 
 The API reduces the amount of boiler plate code needed to communicate with Odoo 
