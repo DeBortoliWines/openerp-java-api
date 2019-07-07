@@ -670,11 +670,28 @@ public class ObjectAdapter {
 
         if (results.get("ids") instanceof Boolean) {
             // There was an error. ids is false and not an Object[]
-            Map<String, Object>[] messages = (Map<String, Object>[]) results.get("messages");
-            String errorString = Arrays.stream(messages) // NOSONAR
-                    .flatMap(m -> m.entrySet().stream())
-                    .map(e -> String.join(":", e.getKey(), e.getValue().toString()))
-                    .collect(Collectors.joining("\n"));
+            boolean std_method = true;
+            String errorString = "Unknown Error!";
+            try {
+                Map<String, Object>[] messages = (Map<String, Object>[]) results.get("messages");
+                errorString = Arrays.stream(messages) // NOSONAR
+                        .flatMap(m -> m.entrySet().stream())
+                        .map(e -> String.join(":", e.getKey(), e.getValue().toString()))
+                        .collect(Collectors.joining("\n"));
+            } catch (Exception e) {
+                std_method = false;
+            }
+
+            if (!std_method) {
+                Object[] messages = (Object[]) results.get("messages");
+                if (messages != null && messages.length > 0) {
+                    Object object = messages[0];
+                    if (object instanceof Map) {
+                        Map map = (Map) object;
+                        errorString = map.get("message").toString();
+                    }
+                }
+            }
             throw new OdooApiException(errorString);
         }
 
