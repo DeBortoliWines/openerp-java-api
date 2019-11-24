@@ -40,11 +40,12 @@ Add those jar files to your classpath and you should be ok.
 
 ## Context manipulation
 
-Values must be passed as string
+Values must cast in correct forma
 
 ```
     Map inputMap = new java.util.HashMap();
-    inputMap.put("active_id", move_id.toString());
+    inputMap.put("active_id", Integer.valueOf(move_id.toString()));
+    inputMap.put("active_ids", new Object[]{ Integer.valueOf(move_id.toString()) }  );
     openERPSession.getContext().putAll(inputMap);
 ```
     
