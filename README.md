@@ -40,6 +40,8 @@ Add those jar files to your classpath and you should be ok.
 
 ## Context manipulation
 
+Values must be passed as string
+
 ```
     Map inputMap = new java.util.HashMap();
     inputMap.put("active_id", move_id.toString());
