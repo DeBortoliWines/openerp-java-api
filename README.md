@@ -19,3 +19,23 @@ For more information, including a Wiki please see the project on SourceForge:
 The project is realeased under the Apache V2 license starting from version 1.5.  
 Earlier versions are dual licenced and developers can choose between LGPL3 (original license) and Apache V2.
 
+
+# Dependencies
+
+This project depends on the XMLRPC library by Apache: http://ws.apache.org/xmlrpc
+
+Download the latest version from apache and extract the tar.
+
+The required jar files are:
+xmlrpc-client-3.1.3.jar
+xmlrpc-common-3.1.3.jar
+ws-commons-util-1.0.2.jar
+
+Add those jar files to your classpath and you should be ok.
+
+# Examples
+
+## Context manipulation
+			Map inputMap = new java.util.HashMap();
+			inputMap.put("active_id", move_id.toString());
+			openERPSession.getContext().putAll(inputMap);
