@@ -76,7 +76,12 @@ return null;
 openERPSession.executeCommand("stock.inventory", "action_done", 
         new Object[]{Integer.valueOf(inventory_id.toString())});
 ```
-
+Or with context forced :
+```
+openERPSession.executeCommandWithContext("account.move.reversal", "reverse_moves", 
+						new Object[]{ remove_id }
+				);
+```
 
     
 # Other ressources [legacy]
