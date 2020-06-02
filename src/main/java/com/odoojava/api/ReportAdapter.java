@@ -21,8 +21,12 @@ package com.odoojava.api;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -34,8 +38,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.xml.bind.DatatypeConverter;
+
 import org.apache.xmlrpc.XmlRpcException;
 
+import com.googlecode.jsonrpc4j.JsonRpcHttpClient;
 import com.odoojava.api.Field.FieldType;
 import com.odoojava.api.helpers.FilterHelper;
 
@@ -44,9 +51,8 @@ import com.odoojava.api.helpers.FilterHelper;
  * Main class for managing reports with the server.
  * 
  * @author Florent THOMAS
- * @param: reportListCache
- *             . Consider Object part that will be set with name/model/type of
- *             the Odoo report
+ * @param: reportListCache . Consider Object part that will be set with
+ *                         name/model/type of the Odoo report
  */
 public class ReportAdapter {
 
@@ -54,6 +60,9 @@ public class ReportAdapter {
 	private Version serverVersion;
 	private Object[] report;
 	private String reportName;
+	private String reportModel;
+	private String reportMethod;
+	private ObjectAdapter objectReportAdapter;
 
 	/**
 	 * @
@@ -66,6 +75,7 @@ public class ReportAdapter {
 		this.serverVersion = session.getServerVersion();
 		try {
 			getReportList();
+
 		} catch (OdooApiException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -73,32 +83,66 @@ public class ReportAdapter {
 	}
 
 	/*
-	 * Method listing the available report and their type Purpose is to use the
-	 * list later to check the existence of the report and its type. Appropriate
-	 * methods will be possible regarding the type
+	 * Method listing the available report and their type Purpose is to use the list
+	 * later to check the existence of the report and its type. Appropriate methods
+	 * will be possible regarding the type
 	 */
 	private void getReportList() throws XmlRpcException, OdooApiException {
 		reportListCache.clear();
-		ObjectAdapter objectAd = this.session.getObjectAdapter("ir.actions.report.xml");
+		objectReportAdapter = this.session.getObjectAdapter(this.getReportModel());
 		FilterCollection filters = new FilterCollection();
-		String[] report_tuple = new String[] { "report_name", "model", "name", "report_type" };
-		RowCollection reports = objectAd.searchAndReadObject(filters, report_tuple);
+		String[] report_tuple = new String[] { "id", "report_name", "model", "name", "report_type" };
+		RowCollection reports = objectReportAdapter.searchAndReadObject(filters, report_tuple);
 		reports.forEach(report -> {
-			Object[] repName = new Object[] { report.get("name"), report.get("model"), report.get("report_type") };
+			Object[] repName = new Object[] { report.get("name"), report.get("model"), report.get("report_type"),
+					report.get("id") };
 			reportListCache.put(report.get("report_name").toString(), repName);
 		});
+	}
+
+	/**
+	 * This method is fully inspire by
+	 * https://github.com/OCA/odoorpc/blob/master/odoorpc/report.py#L113 from
+	 * https://github.com/sebalix
+	 * 
+	 * @return string representing the reportModel regarding the version
+	 */
+	public String getReportModel() {
+		reportModel = "ir.actions.report";
+		if (this.serverVersion.getMajor() < 11) {
+			reportModel = "ir.actions.report.xml";
+		}
+		return reportModel;
+	}
+
+	public String getReportMethod() {
+		reportMethod = "render";
+		if (this.serverVersion.getMajor() < 11) {
+			reportModel = "render_report";
+		}
+		return reportMethod;
 	}
 
 	/**
 	 * @param reportName
 	 * @param ids
 	 * @return
-	 * @throws XmlRpcException
-	 * @throws OdooApiException
+	 * @throws Throwable
 	 */
-	public byte[] getReportAsByte(String reportName, Object[] ids) throws XmlRpcException, OdooApiException {
+	public byte[] getPDFReportAsByte(String reportName, Object[] ids) throws Throwable {
 		checkReportName(reportName);
-		byte[] reportDatas = session.executeReportService(reportName, ids);
+		byte[] reportDatas;
+		if (this.serverVersion.getMajor() < 11) {
+			reportDatas = session.executeReportService(reportName, this.getReportMethod(), ids);
+		} else {
+			ArrayList<Object> reportParams = new ArrayList<Object>();
+			reportParams.add( getReportID());
+			reportParams.add( ids);
+			Object[] result = session.call_report_jsonrpc(getReportModel(), getReportMethod(), reportParams);
+
+			String pdf_string= (String) result[0]; 
+			reportDatas = pdf_string.getBytes(StandardCharsets.ISO_8859_1);
+		}
 		return reportDatas;
 	}
 
@@ -107,8 +151,7 @@ public class ReportAdapter {
 	 * Method to prepare the report to be generated Make some usefull tests
 	 * regarding the
 	 * 
-	 * @param reportName:
-	 *            can be found in Technical > report > report
+	 * @param reportName: can be found in Technical > report > report
 	 * @throws OdooApiException
 	 * @throws XmlRpcException
 	 */
@@ -142,19 +185,30 @@ public class ReportAdapter {
 		return this.report[2].toString();
 	}
 
+	public Integer getReportID() {
+		return Integer.valueOf(this.report[3].toString());
+	}
+
 	public String PrintReportToFileName(Object[] ids) throws IOException, XmlRpcException, OdooApiException {
 
 		File tmp_file = File.createTempFile("odoo-" + report[1].toString() + "-", getReportType().replace("qweb-", "."),
 				null);
 
-		byte[] report_bytes = getReportAsByte(reportName, ids);
+		byte[] report_bytes;
 		FileOutputStream report_stream = new FileOutputStream(tmp_file);
 		try {
+			report_bytes = getPDFReportAsByte(reportName, ids);
+
+			
 			report_stream.write(report_bytes);
+		} catch (Throwable e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		} finally {
 			report_stream.close();
 		}
 
 		return tmp_file.getAbsolutePath().toString();
 	}
+
 }
