@@ -34,17 +34,8 @@ public class ReportAdapterTest {
 
 	@BeforeClass
 	public static void setUp() throws Exception {
-		// session = new ReportAdapterTest(RPCProtocol.RPC_HTTPS,
-		// "demo.odoo.mind-and-go.net", 443, "demov10-ce", "admin",
-		// "admin-demo");
-		// session = new Session(RPCProtocol.RPC_HTTPS,
-		// "demo.odoo.mind-and-go.net",
-		// 443,
-		// "demv10-ce",
-		// "admin",
-		// "admin-demo");
 		DemoDbGetter.getDemoDb(new DemoDbConnectionDataSetter());
-		session = new Session(RPCProtocol.RPC_HTTPS,
+		session = new Session(protocol,
 				host, port, databaseName, userName,password);
 				 
 		session.startSession();
