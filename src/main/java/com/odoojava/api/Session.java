@@ -401,6 +401,7 @@ public class Session {
 		if (parameters != null && parameters.length > 0) {
 			paramsList.add(Arrays.asList(parameters));
 		}
+
 		Map<String, Context> c = new HashMap<>();
 		c.put("context",context);
 		paramsList.add(c);
