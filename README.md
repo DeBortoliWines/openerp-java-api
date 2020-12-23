@@ -36,6 +36,11 @@ ws-commons-util-1.0.2.jar
 
 Add those jar files to your classpath and you should be ok.
 
+# Compilation
+
+This is a maven project, once cloned go into the repo
+Run : ```mvn package``` or any other goal that will produce a .jar in the target folder 
+
 # Examples
 
 ## Context manipulation
