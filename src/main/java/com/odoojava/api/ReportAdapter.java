@@ -116,9 +116,12 @@ public class ReportAdapter {
 	}
 
 	public String getReportMethod() {
-		reportMethod = "render";
+		/**
+		 * Default value of the method for v11
+		 */
+		reportMethod = "render"; 
 		if (this.serverVersion.getMajor() < 11) {
-			reportModel = "render_report";
+			reportMethod = "render_report";
 		}
 		return reportMethod;
 	}
