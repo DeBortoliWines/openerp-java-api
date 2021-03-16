@@ -128,8 +128,14 @@ public class OdooCommand {
      */
     public Object[] readObject(String objectName, Object[] ids, String[] fields) throws XmlRpcException {
         Object[] readResult;
-        if (this.session.getServerVersion().getMajor() >= 8) {
+        if (this.session.getServerVersion().getMajor() >= 8 &&
+        		this.session.getServerVersion().getMajor() < 10  ) {
             readResult = (Object[]) session.executeCommandWithContext(objectName, "read", new Object[]{ids, fields});
+        }
+        else if (this.session.getServerVersion().getMajor() >= 10 ) {
+        	//Signature of the odoo method added a load parameter 
+        	// https://github.com/odoo/odoo/blob/10.0/odoo/models.py#L2995
+            readResult = (Object[]) session.executeCommandWithContext(objectName, "read", new Object[]{ids, fields, new String[] {}});
         } else {
             //TODO: Have to be rewritten/deleted considering the previous call
             readResult = (Object[]) session.executeCommand(objectName, "read", new Object[]{ids, fields, session.getContext()});
