@@ -18,25 +18,18 @@
  */
 package com.odoojava.api;
 
-import java.util.ArrayList;
+import java.util.*;
 import javax.xml.bind.DatatypeConverter;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.xmlrpc.XmlRpcException;
 
 import com.odoojava.api.OdooXmlRpcProxy.RPCProtocol;
 import com.odoojava.api.OdooXmlRpcProxy.RPCServices;
 import com.googlecode.jsonrpc4j.JsonRpcHttpClient;
-import com.odoojava.api.OdooApiException;
-import java.util.Arrays;
 
 /**
  * *
@@ -190,7 +183,7 @@ public class Session {
 	private void checkVersionCompatibility() throws XmlRpcException, OdooApiException {
 
 		if (this.getServerVersion().getMajor() < 8 || this.getServerVersion().getMajor() > 13) {
-			throw new OdooApiException("Only Odoo Version from v8.x to 12.x are maintained. "
+			throw new OdooApiException("Only Odoo Version from v8.x to 13.x are maintained. "
 					+ "Please choose another version of the library");
 		}
 
@@ -278,10 +271,6 @@ public class Session {
 		methodparams.add(reportModel);
 		methodparams.add(reportMethod);
 		methodparams.add( args);
-		
-//		methodparams.put("color", 8);
-//		methodparams.put("memo", "another note");
-//			note_id = call(url, "object", "execute", DB, uid, PASS, 'note.note', 'create', args)
 
 		jsonparams.put("args", methodparams);
 
@@ -391,6 +380,36 @@ public class Session {
 	}
 
 	/**
+	 * Executes any command on the server linked to the /xmlrpc/object service. All
+	 * parameters are prepended by: "databaseName,userID,password" This method
+	 * execute the command without the context parameter Its purpose is to be used
+	 * by Odoo version prior to v10 or for v10 methods that mustn't use the context
+	 *
+	 * @param objectName  Object or model name to execute the command on
+	 * @param commandName Command name to execute
+	 * @param parameters  List of parameters for the command. For easy of use,
+	 *                    consider the OdooCommand object or ObjectAdapter
+	 * @param context  	  The user context
+	 * @return The result of the call
+	 * @throws XmlRpcException
+	 */
+	public Object executeCommandKw(final String objectName, final String commandName, final Object[] parameters, Context context)
+			throws XmlRpcException {
+
+		List<Object> paramsList = new ArrayList<>();
+		paramsList.addAll(Arrays.asList(new Object[] { databaseName, userID, password, objectName, commandName }));
+		if (parameters != null && parameters.length > 0) {
+			paramsList.add(Arrays.asList(parameters));
+		}
+
+		Map<String, Context> c = new HashMap<>();
+		c.put("context",context);
+		paramsList.add(c);
+		return objectClient.execute("execute_kw", paramsList);
+
+	}
+
+	/**
 	 * Executes any command on the server linked to the /xmlrpc/object service.
 	 * parameters and Context are prepended .The context MUST NOT have been already
 	 * passed in the parameters.
@@ -406,13 +425,18 @@ public class Session {
 			final Object[] parameters) throws XmlRpcException {
 		Object[] connectionParams = new Object[] { databaseName, userID, password, objectName, commandName };
 
-		// Combine the parameters with the context
-		Object[] params = new Object[1 + (parameters == null ? 0 : parameters.length)];
-		if (parameters != null && parameters.length > 0) {
-			System.arraycopy(parameters, 0, params, 0, parameters.length);
+		if(this.getServerVersion().getMajor() < 13){
+			// Combine the parameters with the context
+			Object[] params = new Object[1 + (parameters == null ? 0 : parameters.length)];
+			if (parameters != null && parameters.length > 0) {
+				System.arraycopy(parameters, 0, params, 0, parameters.length);
+			}
+			System.arraycopy(new Object[] { getContext() }, 0, params, parameters.length, 1);
+			return executeCommand(objectName, commandName, params);
+		}else{
+			return executeCommandKw(objectName, commandName, parameters,getContext());
 		}
-		System.arraycopy(new Object[] { getContext() }, 0, params, parameters.length, 1);
-		return executeCommand(objectName, commandName, params);
+
 	}
 
 	/**
