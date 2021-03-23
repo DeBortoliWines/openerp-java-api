@@ -29,7 +29,8 @@ import org.apache.xmlrpc.XmlRpcException;
 
 import com.odoojava.api.OdooXmlRpcProxy.RPCProtocol;
 import com.odoojava.api.OdooXmlRpcProxy.RPCServices;
-import com.googlecode.jsonrpc4j.JsonRpcHttpClient;
+import com.googlecode.jsonrpc4j.*;
+import com.googlecode.jsonrpc4j.JsonRpcClientException;
 
 /**
  * *
@@ -222,10 +223,24 @@ public class Session {
 		// JSONRPC part
 		try {
 			id = authenticate_json_rpc();
+			System.out.println("json rpc login");
+
+		} catch (JsonRpcClientException e) {
+			// TODO Auto-generated catch block
+			String exc = e.getMessage();
+			System.out.println("Json rpc issue possibly caused by https://github.com/OCA/server-tools/issues/1237");
+			
+			
 		} catch (Throwable e) {
 			// TODO Auto-generated catch block
+			
+			System.out.println("General exception");
 			e.printStackTrace();
 		}
+		finally {
+			System.out.println("something bad potentially happened during connexion through JsonRPC");
+		}
+
 		if (id instanceof Integer) {
 			userID = (Integer) id;
 		} else {
@@ -270,7 +285,7 @@ public class Session {
 		methodparams.add(password);
 		methodparams.add(reportModel);
 		methodparams.add(reportMethod);
-		methodparams.add( args);
+		methodparams.add(args);
 
 		jsonparams.put("args", methodparams);
 
@@ -389,12 +404,12 @@ public class Session {
 	 * @param commandName Command name to execute
 	 * @param parameters  List of parameters for the command. For easy of use,
 	 *                    consider the OdooCommand object or ObjectAdapter
-	 * @param context  	  The user context
+	 * @param context     The user context
 	 * @return The result of the call
 	 * @throws XmlRpcException
 	 */
-	public Object executeCommandKw(final String objectName, final String commandName, final Object[] parameters, Context context)
-			throws XmlRpcException {
+	public Object executeCommandKw(final String objectName, final String commandName, final Object[] parameters,
+			Context context) throws XmlRpcException {
 
 		List<Object> paramsList = new ArrayList<>();
 		paramsList.addAll(Arrays.asList(new Object[] { databaseName, userID, password, objectName, commandName }));
@@ -403,7 +418,7 @@ public class Session {
 		}
 
 		Map<String, Context> c = new HashMap<>();
-		c.put("context",context);
+		c.put("context", context);
 		paramsList.add(c);
 		return objectClient.execute("execute_kw", paramsList);
 
@@ -425,7 +440,7 @@ public class Session {
 			final Object[] parameters) throws XmlRpcException {
 		Object[] connectionParams = new Object[] { databaseName, userID, password, objectName, commandName };
 
-		if(this.getServerVersion().getMajor() < 13){
+		if (this.getServerVersion().getMajor() < 13) {
 			// Combine the parameters with the context
 			Object[] params = new Object[1 + (parameters == null ? 0 : parameters.length)];
 			if (parameters != null && parameters.length > 0) {
@@ -433,8 +448,8 @@ public class Session {
 			}
 			System.arraycopy(new Object[] { getContext() }, 0, params, parameters.length, 1);
 			return executeCommand(objectName, commandName, params);
-		}else{
-			return executeCommandKw(objectName, commandName, parameters,getContext());
+		} else {
+			return executeCommandKw(objectName, commandName, parameters, getContext());
 		}
 
 	}

@@ -131,8 +131,8 @@ public class ObjectAdapter {
 	}
 
 	private boolean isUserPortal() {
-
-		return true;
+		//WIP TODO: implement lookup on the user group 
+		return false;
 	}
 
 	static void clearModelNameCache() {
