@@ -29,10 +29,11 @@ This project depends on the XMLRPC library by Apache: http://ws.apache.org/xmlrp
 
 Download the latest version from apache and extract the tar.
 
-The required jar files are:
-xmlrpc-client-3.1.3.jar
-xmlrpc-common-3.1.3.jar
-ws-commons-util-1.0.2.jar
+The required jar files are :
+* xmlrpc-client-3.1.3.jar
+* xmlrpc-common-3.1.3.jar
+* ws-commons-util-1.0.2.jar
+* jsonrpc4j
 
 Add those jar files to your classpath and you should be ok.
 
