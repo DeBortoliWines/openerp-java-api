@@ -89,6 +89,28 @@ openERPSession.executeCommandWithContext("account.move.reversal", "reverse_moves
 				);
 ```
 
+## Getting fields for audit / tracking purposes
+
+```
+// authenticate
+
+ObjectAdapter partnerAdapter = session.getObjectAdapter("res.partner");
+
+Row newPartner = partnerAdapter.getNewRow(new String[]{"name", "ref", "email", "field1", "field2"});
+newPartner.put("name", "Jhon Doe");
+newPartner.put("ref", "Reference value");
+newPartner.put("email", "personalemail@mail.com");
+newPartner.put("field1", "1");
+newPartner.put("field2", "2");
+
+partnerAdapter.createObject(newPartner);
+
+// Getting fields for tracking/audit purposes
+HashMap<String, Object> rowSaved = newPartner.getFieldsOdoo().toString();
+
+saveToDatabaseForTrackingPurpose(rowSaved);
+saveToDatabaseForTrackingPurpose(newPartner.getID());
+```
     
 # Other ressources [legacy]
 
