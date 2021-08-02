@@ -95,7 +95,6 @@ public class ObjectAdapter {
      * synchronized to make use of a global (static) list of model names to
      * increase speed
      *
-     * @param command Command object to use
      * @throws OdooApiException If the model could not be validated
      */
     @SuppressWarnings("unchecked")
@@ -848,14 +847,14 @@ public class ObjectAdapter {
      *
      * @param row Row to be committed
      * @param changesOnly Only changed values will be submitted to the database.
-     * @return If the update was successful
+     * @return true if the update was successful
      * @throws OdooApiException
      * @throws XmlRpcException
      */
     public boolean writeObject(final Row row, boolean changesOnly) throws OdooApiException {
 
         Object idObj = row.get("id");
-
+        boolean success = false;
         if (idObj == null || Integer.parseInt(idObj.toString()) <= 0) {
             throw new OdooApiException("Please set the id field with the database ID of the object");
         }
@@ -869,12 +868,33 @@ public class ObjectAdapter {
         }
 
         try {
+            if (this.serverVersion.getMajor() == 8) {
+                Object result = command.writeObject(modelName, id, valueList);
+                Object[] resultTemp = (Object[]) result;
+                Object[] resultTemp2 = (Object[]) resultTemp[0];
 
-            boolean success = command.writeObject(modelName, id, valueList);
-            if (success) {
-                row.changesApplied();
+                if (resultTemp2[0] instanceof Boolean) {
+                    success = ((Boolean) resultTemp2[0]).booleanValue();
+
+                    if (success) {
+                        row.changesApplied();
+                    }
+
+                    return success;
+                } else {
+                    return false;
+                }
+
+            } else {
+                success = (Boolean) command.writeObject(modelName, id, valueList);
+
+                if (success) {
+                    row.changesApplied();
+                }
+
+                return success;
             }
-            return success;
+
 
         } catch (XmlRpcException e) {
             throw new OdooApiException(e);
