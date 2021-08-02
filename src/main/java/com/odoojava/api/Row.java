@@ -254,7 +254,7 @@ public class Row {
 	 * Returns the map with fields content that the row was filled
 	 * @return
 	 */
-	public HashMap<String, Object> getFieldsOpenERPResult() {
+	public HashMap<String, Object> getFieldsOdoo() {
 		return openERPResult;
 	}
 
