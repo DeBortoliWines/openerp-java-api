@@ -150,17 +150,17 @@ public class OdooCommand {
      * @param objectName Name of the object to update
      * @param id Database ID number of the object to update
      * @param valueList Field/Value pairs to update on the object
-     * @return True if the update was successful
+     * @return An Object value with the result of write operation
      * @throws XmlRpcException
      */
-    public boolean writeObject(String objectName, int id, Map<String, Object> valueList) throws XmlRpcException {
+    public Object writeObject(String objectName, int id, Map<String, Object> valueList) throws XmlRpcException {
         if (this.session.getServerVersion().getMajor() < 10) {
             //Prior to the v10, each version have to be adapted if needed
             //Some methods on certains class from v8 to v9 don't respect the syntax
-            return (Boolean) session.executeCommand(objectName, "write", new Object[]{id, valueList});
+            return session.executeCommand(objectName, "write", new Object[]{id, valueList});
         } else {
             //Work perfectly for the v10, please keep this check
-            return (Boolean) session.executeCommandWithContext(objectName, "write", new Object[]{id, valueList});
+            return session.executeCommandWithContext(objectName, "write", new Object[]{id, valueList});
         }
 
     }
