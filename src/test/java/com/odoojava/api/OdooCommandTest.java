@@ -136,7 +136,8 @@ public class OdooCommandTest {
         Map<String, Object> valueList = null;
         OdooCommand instance = null;
         boolean expResult = false;
-        boolean result = instance.writeObject(objectName, id, valueList);
+        boolean result = ((Boolean) ((Object[]) ((Object[])instance.writeObject(objectName, id, valueList))[0])[0]).booleanValue();
+
         assertEquals(expResult, result);
         // TODO review the generated test code and remove the default call to fail.
         fail("The test case is a prototype.");

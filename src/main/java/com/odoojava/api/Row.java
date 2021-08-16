@@ -250,6 +250,14 @@ public class Row {
 		return changedFields;
 	}
 
+	/**
+	 * Returns the map with fields content that the row was filled
+	 * @return
+	 */
+	public HashMap<String, Object> getFieldsOdoo() {
+		return openERPResult;
+	}
+
 	/***
 	 * Event handler to notify listeners when a row changes values
 	 * @author Pieter van der Merwe

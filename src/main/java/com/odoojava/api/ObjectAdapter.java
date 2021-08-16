@@ -13,7 +13,7 @@
  *   distributed under the License is distributed on an "AS IS" BASIS,
  *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *   See the License for the specific language governing permissions and
- *   limitations under the License. 
+ *   limitations under the License.
  *
  */
 package com.odoojava.api;
@@ -131,7 +131,7 @@ public class ObjectAdapter {
 	}
 
 	private boolean isUserPortal() {
-		//WIP TODO: implement lookup on the user group 
+		//WIP TODO: implement lookup on the user group
 		return false;
 	}
 
@@ -854,6 +854,7 @@ public class ObjectAdapter {
 	public boolean writeObject(final Row row, boolean changesOnly) throws OdooApiException {
 
 		Object idObj = row.get("id");
+		boolean success = false;
 
 		if (idObj == null || Integer.parseInt(idObj.toString()) <= 0) {
 			throw new OdooApiException("Please set the id field with the database ID of the object");
@@ -869,11 +870,32 @@ public class ObjectAdapter {
 
 		try {
 
-			boolean success = command.writeObject(modelName, id, valueList);
-			if (success) {
-				row.changesApplied();
+			if (this.serverVersion.getMajor() == 8) {
+				Object result = command.writeObject(modelName, id, valueList);
+				Object[] resultTemp = (Object[]) result;
+				Object[] resultTemp2 = (Object[]) resultTemp[0];
+
+				if (resultTemp2[0] instanceof Boolean) {
+					success = ((Boolean) resultTemp2[0]).booleanValue();
+
+					if (success) {
+						row.changesApplied();
+					}
+
+					return success;
+				} else { // the result object is a HashMap with an exception message.
+					return false;
+				}
+
+			} else {
+				success = (Boolean) command.writeObject(modelName, id, valueList);
+
+				if (success) {
+					row.changesApplied();
+				}
+
+				return success;
 			}
-			return success;
 
 		} catch (XmlRpcException e) {
 			throw new OdooApiException(e);
