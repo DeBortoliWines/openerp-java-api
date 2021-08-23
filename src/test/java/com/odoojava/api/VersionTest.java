@@ -1,6 +1,5 @@
 package com.odoojava.api;
 
-import com.odoojava.api.Version;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.assertj.core.api.SoftAssertions;

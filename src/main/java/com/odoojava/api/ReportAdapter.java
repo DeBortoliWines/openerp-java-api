@@ -21,30 +21,13 @@ package com.odoojava.api;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URL;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TimeZone;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.xml.bind.DatatypeConverter;
 
 import org.apache.xmlrpc.XmlRpcException;
 
-import com.googlecode.jsonrpc4j.JsonRpcHttpClient;
-import com.odoojava.api.Field.FieldType;
-import com.odoojava.api.helpers.FilterHelper;
 
 /**
  * 
@@ -201,8 +184,6 @@ public class ReportAdapter {
 		FileOutputStream report_stream = new FileOutputStream(tmp_file);
 		try {
 			report_bytes = getPDFReportAsByte(reportName, ids);
-
-			
 			report_stream.write(report_bytes);
 		} catch (Throwable e) {
 			// TODO Auto-generated catch block

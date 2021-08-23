@@ -6,14 +6,10 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.xmlrpc.XmlRpcException;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import com.odoojava.api.Session;
 import com.odoojava.api.DemoDbGetter.DemoDbInfoRequester;
 import com.odoojava.api.OdooXmlRpcProxy.RPCProtocol;
-
 
 public class ReportAdapterTest {
 
@@ -35,9 +31,8 @@ public class ReportAdapterTest {
 	@BeforeClass
 	public static void setUp() throws Exception {
 		DemoDbGetter.getDemoDb(new DemoDbConnectionDataSetter());
-		session = new Session(protocol,
-				host, port, databaseName, userName,password);
-				 
+		session = new Session(protocol, host, port, databaseName, userName, password);
+
 		session.startSession();
 	}
 

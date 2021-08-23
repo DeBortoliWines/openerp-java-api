@@ -71,18 +71,18 @@ public class Session {
 
 	private URL jsonurl;
 	private JsonRpcHttpClient jsonclient;
-	private Object[] login_args;
+	// private Object[] login_args;
 
 	public URL getJsonurl(String entryPoint) {
 		String protocol_str = "";
 		switch (this.protocol) {
-		case RPC_HTTP:
-			protocol_str = "http";
-			break;
+			case RPC_HTTP:
+				protocol_str = "http";
+				break;
 
-		default:
-			protocol_str = "https";
-			break;
+			default:
+				protocol_str = "https";
+				break;
 		}
 
 		URL urljson;
@@ -183,8 +183,8 @@ public class Session {
 
 	private void checkVersionCompatibility() throws XmlRpcException, OdooApiException {
 
-		if (this.getServerVersion().getMajor() < 8 || this.getServerVersion().getMajor() > 13) {
-			throw new OdooApiException("Only Odoo Version from v8.x to 13.x are maintained. "
+		if (this.getServerVersion().getMajor() < 8 || this.getServerVersion().getMajor() > 14) {
+			throw new OdooApiException("Only Odoo Version from v8.x to 14.x are maintained. "
 					+ "Please choose another version of the library");
 		}
 
@@ -226,20 +226,12 @@ public class Session {
 			System.out.println("json rpc login");
 
 		} catch (JsonRpcClientException e) {
-			// TODO Auto-generated catch block
-			String exc = e.getMessage();
 			System.out.println("Json rpc issue possibly caused by https://github.com/OCA/server-tools/issues/1237");
-			
-			
+			e.printStackTrace();
 		} catch (Throwable e) {
-			// TODO Auto-generated catch block
-			
 			System.out.println("General exception");
 			e.printStackTrace();
-		}
-		finally {
-			System.out.println("something bad potentially happened during connexion through JsonRPC");
-		}
+		} 
 
 		if (id instanceof Integer) {
 			userID = (Integer) id;
@@ -251,7 +243,7 @@ public class Session {
 	}
 
 	private int authenticate_json_rpc() throws Throwable {
-		// TODO: fast and uggly implementation of json rpc, has to be reafctored in the
+		// TODO: fast and uggly implementation of json rpc, has to be refactored in the
 		// future
 
 		Map<String, String> articleMapOne = new HashMap<>();
@@ -259,13 +251,11 @@ public class Session {
 		articleMapOne.put("login", userName);
 		articleMapOne.put("db", databaseName);
 
-//		Object[] result = call_json_rpc(, "common", "login", articleMapOne);
+		// Object[] result = call_json_rpc(, "common", "login", articleMapOne);
 
 		jsonclient.setServiceUrl(getJsonurl("web/session/authenticate"));
 
-		Map<String, Object> result = jsonclient.invoke("call", articleMapOne, HashMap.class);
-//		Object[] result = jsonclient.readResponse(clazz, input);
-//		result.get
+		Map<String, Object> result =  jsonclient.invoke("call", articleMapOne, HashMap.class);
 		return (int) result.get("uid");
 	}
 
@@ -466,9 +456,13 @@ public class Session {
 	 */
 	public void executeWorkflow(final String objectName, final String signal, final int objectID)
 			throws XmlRpcException {
-		Object[] params = new Object[] { databaseName, userID, password, objectName, signal, objectID };
 
-		objectClient.execute("exec_workflow", params);
+		if (serverVersion.getMajor() <= 10) {
+			Object[] params = new Object[] { databaseName, userID, password, objectName, signal, objectID };
+			objectClient.execute("exec_workflow", params);
+		} else {
+			System.out.println("exec_workflow is not supported in Odoo versions > 10");
+		}
 	}
 
 	/**

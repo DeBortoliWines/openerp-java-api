@@ -1,7 +1,5 @@
 package com.odoojava.api;
 
-import com.odoojava.api.Version;
-import com.odoojava.api.OdooXmlRpcProxy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;

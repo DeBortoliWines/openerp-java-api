@@ -1,18 +1,15 @@
 package com.odoojava.api;
 
-import com.odoojava.api.Response;
-import com.odoojava.api.OdooApiException;
-import com.odoojava.api.Row;
-import com.odoojava.api.OdooCommand;
-import com.odoojava.api.ObjectAdapter;
-import com.odoojava.api.FieldCollection;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import com.odoojava.api.DemoDbGetter.DemoDbInfoRequester;
+import com.odoojava.api.OdooXmlRpcProxy.RPCProtocol;
 
 import java.util.HashMap;
 
 import org.apache.xmlrpc.XmlRpcException;
 import org.assertj.core.api.SoftAssertions;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ObjectAdapterTest {
@@ -20,9 +17,28 @@ public class ObjectAdapterTest {
 	private static final String OTHER_MODEL_NAME = "otherModel";
 	private static final String TEST_MODEL_NAME = "testModelName";
 	private static final String TEST_SIGNAL_NAME = "signal";
+	private static RPCProtocol protocol;
+	private static String host;
+	private static Integer port;
+	private static String databaseName;
+	private static String userName;
+	private static String password;
+
+	private static Session session;
 
 	boolean validated = false;
 
+	@BeforeClass
+	public static void setUp() throws Exception {
+		DemoDbGetter.getDemoDb(new DemoDbConnectionDataSetter());
+		session = new Session(protocol,
+				host, port, databaseName, userName,password);
+				 
+		session.startSession();
+	}
+	
+
+	
 	private final class TestAdapter extends ObjectAdapter {
 
 		public TestAdapter() throws OdooApiException, XmlRpcException {
@@ -39,7 +55,10 @@ public class ObjectAdapterTest {
 			return null;
 		}
 	}
+	
+	
 
+	
 	private abstract class AbstractTestCommand extends OdooCommand {
 		boolean searchCalledOnce = false;
 		boolean searchCalledTwiceOrMore = false;
@@ -155,6 +174,56 @@ public class ObjectAdapterTest {
 		}
 	}
 
+
+
+	
+    /**
+     * Test of searchObject method, of class OdooCommand.
+     */
+    @Test
+    public void testSearchObject() throws Exception {
+        ObjectAdapter partnerAdapter = session.getObjectAdapter("res.partner");
+        FilterCollection filters = new FilterCollection();
+        filters.add("id", "<=", 2);
+        RowCollection partners = partnerAdapter.searchAndReadObject(
+            filters, new String[] { "name", "email" });
+
+        SoftAssertions softAssertions = new SoftAssertions();
+        softAssertions.assertThat(partners.isEmpty()).as("Is successful").isFalse();
+        softAssertions.assertAll();
+    }
+
+
+	@Test
+	public void should_return_model_list() throws Exception {
+		// use SoftAssertions instead of direct assertThat methods
+		// to collect all failing assertions in one go
+		SoftAssertions softly = new SoftAssertions();
+		
+		assert(true);
+	}
+
+	@Test
+	public void test_translated_name() throws Exception {
+		// use SoftAssertions instead of direct assertThat methods
+		// to collect all failing assertions in one go
+		SoftAssertions softly = new SoftAssertions();
+		
+		String objectName = "product.product";
+		ObjectAdapter prodAdapter = session.getObjectAdapter(objectName);
+		String[] fields = new String[]{"name", "display_name"};
+		Integer[]  ids = new Integer [] { 32 };
+		FilterCollection filters = new FilterCollection();
+		RowCollection prod_ids = prodAdapter.readObject(
+				ids,
+				fields);
+		Row prod_id = prod_ids.get(0);
+
+		Object[] readResult = (Object[]) session.executeCommand(objectName, "read", new Object[]{ids, fields});
+		System.out.println("prod_id name " + prod_id.get("name"));		
+		assert(true);
+	}
+	
 	@Test
 	public void should_throw_if_signal_doesnt_exist_for_that_object() throws Exception {
 		// Wrong signal
@@ -191,5 +260,41 @@ public class ObjectAdapterTest {
 		adapter.executeWorkflow(row, TEST_SIGNAL_NAME);
 		assertThat(command.executeWorkflowCalled).as("Command's executeWorkflow has been called").isTrue();
 	}
+	
+	/**
+	 * Only used to set the static data for connection on the main class
+	 */
+	private static class DemoDbConnectionDataSetter implements DemoDbInfoRequester {
+		@Override
+		public void setProtocol(RPCProtocol protocol) {
+			ObjectAdapterTest.protocol = protocol;
+		}
+
+		@Override
+		public void setHost(String host) {
+			ObjectAdapterTest.host = host;
+		}
+
+		@Override
+		public void setPort(Integer port) {
+			ObjectAdapterTest.port = port;
+		}
+
+		@Override
+		public void setDatabaseName(String databaseName) {
+			ObjectAdapterTest.databaseName = databaseName;
+		}
+
+		@Override
+		public void setUserName(String userName) {
+			ObjectAdapterTest.userName = userName;
+		}
+
+		@Override
+		public void setPassword(String password) {
+			ObjectAdapterTest.password = password;
+		}
+	}
+
 
 }
